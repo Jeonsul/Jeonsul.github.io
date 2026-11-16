@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전국 · 기록</title>
+<meta name="description" content="인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 기록.">
+<meta name="author" content="전국">
+<meta name="theme-color" content="#fbfaf7">
+<meta property="og:title" content="전국 · 기록">
+<meta property="og:description" content="인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 기록.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ko_KR">
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="./style.css">
+<script>
+  // Set the theme before first paint so the page never flashes.
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('theme'); } catch (e) {}
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = saved === 'dark' || saved === 'light' ? saved : (dark ? 'dark' : 'light');
+  })();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">본문으로 건너뛰기</a>
+
+<header class="site-header" id="siteHeader">
+  <div class="wrap header-inner">
+    <a class="brand" href="#/" aria-label="전국, 첫 화면">
+      <span class="brand-mark">전국</span>
+      <span class="brand-en">JEONSUL</span>
+    </a>
+    <nav class="nav" aria-label="주요 메뉴">
+      <a href="#/" data-nav="home">글</a>
+      <a href="#/archive" data-nav="archive">기록</a>
+      <a href="#/about" data-nav="about">소개</a>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="다크 모드로 전환" title="라이트 / 다크">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"></circle>
+          <path d="M12 2.6v2.4M12 19v2.4M2.6 12H5M19 12h2.4M5.4 5.4l1.7 1.7M16.9 16.9l1.7 1.7M18.6 5.4l-1.7 1.7M7.1 16.9l-1.7 1.7"></path>
+        </svg>
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.3 14.6A8.6 8.6 0 0 1 9.4 3.7a8.6 8.6 0 1 0 10.9 10.9z"></path>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<div class="progress" id="progress" aria-hidden="true"><span></span></div>
+
+<main id="main" class="wrap" tabindex="-1">
+  <div class="skeleton" aria-hidden="true">
+    <div class="sk-line sk-sm"></div>
+    <div class="sk-line sk-lg"></div>
+    <div class="sk-line sk-md"></div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <p class="footer-note">© <span id="year">2026</span> 전국 · 천천히 쌓는 중</p>
+    <p class="footer-links">
+      <a href="#/archive">기록</a>
+      <a href="#/about">소개</a>
+      <a href="https://github.com/Jeonsul" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<noscript>
+  <div class="wrap noscript">
+    <p>이 블로그는 자바스크립트로 글을 불러옵니다. 스크립트를 켜면 글이 보입니다.</p>
+  </div>
+</noscript>
+
+<script src="./app.js"></script>
+</body>
+</html>
