@@ -116,6 +116,7 @@ button {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: var(--bg);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
@@ -839,8 +840,15 @@ main { min-height: 70vh; padding-bottom: 5rem; }
 
   .entry a {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.35rem;
+    gap: 0.3rem;
     padding: 1.35rem 0;
+  }
+  .entry time,
+  .entry h2,
+  .entry h3,
+  .entry .summary {
+    grid-column: 1;
+    grid-row: auto;
   }
   .entry time { order: -1; font-size: 0.75rem; }
   .entry .summary { grid-column: 1; }
