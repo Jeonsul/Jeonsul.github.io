@@ -614,6 +614,7 @@ async function rankPopular() {
 
 async function requestCountPath(path) {
   const res = await fetch(`https://${goatcounterCode}.goatcounter.com/counter/${encodeURIComponent(path)}.json`, { cache: 'no-store' });
+  if (res.status === 404) return '0'; // 아직 집계 전인 글은 0으로 본다
   if (!res.ok) throw new Error('counter ' + res.status);
   const data = await res.json();
   return String(data && data.count != null ? data.count : '0');
