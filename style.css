@@ -974,6 +974,7 @@ main { min-height: 70vh; padding-bottom: 5rem; }
 
 .admin-msg { margin: 0.5rem 0 0; min-height: 1.2em; font-size: 0.8125rem; color: var(--muted); }
 .admin-msg.is-error { color: var(--accent); }
+.admin-msg .msg-detail { display: block; margin-top: 0.2rem; font-size: 0.75em; opacity: 0.72; word-break: break-word; }
 
 .admin-help { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
 .admin-help summary {

@@ -242,11 +242,23 @@
     if (err.network) return 'GitHub에 연결하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요.';
     if (err.repoMissing) return '저장소를 찾지 못했습니다. 토큰의 Repository access에 Jeonsul.github.io가 들어 있는지 확인해 주세요.';
     if (err.status === 401) return '토큰이 올바르지 않거나 만료됐습니다. 새 토큰을 만들어 다시 로그인해 주세요.';
-    if (err.status === 403) return '권한이 부족합니다. 토큰의 Contents 권한이 Read and write인지 확인해 주세요.';
+    if (err.status === 403) return "쓰기 권한이 없습니다. GitHub 토큰 설정에서 Repository access를 'Only select repositories → Jeonsul.github.io'로 고르고(Public repositories는 읽기 전용), Permissions의 Contents를 'Read and write'로 바꿨는지 확인해 주세요.";
     if (err.slugTaken) return err.message;
     if (err.status === 404) return '저장소에서 파일을 찾지 못했습니다.';
     if (err.status === 409 || err.status === 422) return '저장이 겹쳤습니다. 잠시 뒤 다시 시도해 주세요. (' + (err.message || err.status) + ')';
     return 'GitHub 요청이 실패했습니다. (' + (err.message || err.status || 'error') + ')';
+  }
+
+  /* 오류 본문은 그대로 두고, GitHub이 보낸 원문 메시지는 작게 덧붙입니다. */
+  function setApiError(el, err) {
+    if (!el) return;
+    el.textContent = apiErrorText(err);
+    const detail = err && err.message ? String(err.message) : '';
+    if (!detail || detail === el.textContent) return;
+    const small = document.createElement('span');
+    small.className = 'msg-detail';
+    small.textContent = detail;
+    el.appendChild(small);
   }
 
   /* ── 글 데이터 ────────────────────────────────────────── */
@@ -388,7 +400,7 @@
         storeToken(token, persist.checked);
         render(root, { name: 'admin', sub: '', arg: '' });
       } catch (err) {
-        msg.textContent = apiErrorText(err);
+        setApiError(msg, err);
       } finally {
         button.disabled = false;
         button.textContent = '로그인';
@@ -876,7 +888,7 @@
         invalidateSite();
         location.hash = '#/admin/done/' + encodeURIComponent(result.slug);
       } catch (err) {
-        msg.textContent = apiErrorText(err);
+        setApiError(msg, err);
         msg.classList.add('is-error');
         saveBtn.disabled = false;
         saveBtn.textContent = label;
@@ -1091,7 +1103,7 @@
           state.flash = { type: 'ok', text: code ? `GoatCounter 코드를 "${code}"로 저장했습니다. 사이트 반영까지 30초~1분 걸립니다.` : 'GoatCounter 추적을 껐습니다. 반영까지 30초~1분 걸립니다.' };
           await renderDashboard(root, '');
         } catch (err) {
-          configMsg.textContent = apiErrorText(err);
+          setApiError(configMsg, err);
           configMsg.classList.add('is-error');
           configBtn.disabled = false;
           configBtn.textContent = '설정 저장';
