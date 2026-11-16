@@ -8,23 +8,44 @@
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-  :root { --bg:#fbfaf7; --fg:#17181a; --muted:#6d727a; --accent:#b8461b; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#0e0f11; --fg:#ecebe7; --muted:#9196a0; --accent:#f4794b; } }
+  :root {
+    --bg:#ffffff; --surface:#f2f4f6; --fg:#191f28; --text2:#4e5968; --muted:#8b95a1;
+    --blue:#3182f6; --blue-hover:#1b64da; --blue-pill:#e8f3ff; --blue-text:#1b64da;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#101013; --surface:#202027; --fg:#f2f4f6; --text2:#b0b8c1; --muted:#8b95a1;
+      --blue:#4593fc; --blue-hover:#6fa8fd; --blue-pill:rgba(69,147,252,.16); --blue-text:#4593fc;
+    }
+  }
   body {
     margin:0; min-height:100vh; display:grid; place-items:center;
     background:var(--bg); color:var(--fg);
     font-family:"Pretendard Variable",Pretendard,-apple-system,system-ui,sans-serif;
     text-align:center; padding:2rem;
   }
-  .code { font-size:.75rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
-  h1 { font-size:clamp(1.6rem,5vw,2.3rem); letter-spacing:-.03em; margin:1rem 0 .8rem; }
-  p { color:var(--muted); margin:0 0 2rem; line-height:1.8; }
-  a { color:var(--accent); text-decoration:none; border-bottom:1px solid currentColor; padding-bottom:2px; }
+  .card {
+    display:inline-block; padding:3rem 2.6rem; border-radius:24px;
+    background:var(--surface);
+  }
+  .badge {
+    display:inline-block; padding:.25rem .8rem; border-radius:999px;
+    background:var(--blue-pill); color:var(--blue-text);
+    font-size:.78rem; font-weight:700;
+  }
+  h1 { font-size:clamp(1.6rem,5vw,2.2rem); letter-spacing:-.03em; margin:1.2rem 0 .8rem; }
+  p { color:var(--text2); margin:0 0 2rem; line-height:1.8; }
+  a {
+    display:inline-block; padding:.7rem 1.3rem; border-radius:12px;
+    background:var(--blue); color:#fff; text-decoration:none;
+    font-size:.95rem; font-weight:700;
+  }
+  a:hover { background:var(--blue-hover); }
 </style>
 </head>
 <body>
-  <div>
-    <p class="code">404</p>
+  <div class="card">
+    <span class="badge">404</span>
     <h1>여기에는 글이 없습니다</h1>
     <p>주소가 바뀌었거나, 오타일 수 있습니다.</p>
     <a id="home" href="/">첫 화면으로 돌아가기</a>

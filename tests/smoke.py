@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""정적 블로그 스모크 테스트 — 빌드 도구 없이 python3 tests/smoke.py 로 돌린다.
+
+점검 항목:
+  1. 필수 파일 존재
+  2. posts.json JSON 파싱 + posts/*.md 대응 확인
+  3. index.html 의 에셋 참조(쿼리 버전 일치) 확인
+  4. 태그 키가 app.js TAGS 및 admin.js 기본값과 일치
+  5. 민감어 0건 스캔 (공개 페이지가 될 파일 대상)
+  6. app.js 가 예전 globals(renderMarkdown, TAGS)를 그대로 노출하는지(관리자 미리보기 호환)
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+REQUIRED = ["index.html", "style.css", "app.js", "admin.js", "posts.json",
+            "robots.txt", "sitemap.xml", "404.html", "site-config.json",
+            ".nojekyll", "assets/favicon.svg"]
+
+# 공개 사이트에 실려 나가면 안 되는 단어 (sync_notion.py 의 목록과 같은 성격)
+SENSITIVE = [
+    "군대", "군인", "부대", "훈련소", "입대", "제대하", "제대한", "전역", "간부",
+    "병장", "상병", "일병", "이병", "영창", "국가정보원",
+]
+# 본문(글)에만 점검하는 인증정보 단어 — admin.js 는 토큰 입력 UI 자체라 예외
+CRED_WORDS = ["password", "secret_", "github_pat_"]
+
+failures = []
+
+
+def check(name, cond, detail=""):
+    print(f"{'PASS' if cond else 'FAIL'}  {name}" + (f"  ({detail})" if detail and not cond else ""))
+    if not cond:
+        failures.append(name)
+
+
+# 1. 필수 파일
+for rel in REQUIRED:
+    check(f"파일 존재: {rel}", (ROOT / rel).exists())
+
+# 2. posts.json
+try:
+    posts = json.loads((ROOT / "posts.json").read_text(encoding="utf-8"))
+    check("posts.json 파싱", True)
+except Exception as e:
+    posts = []
+    check("posts.json 파싱", False, str(e))
+
+slugs = [p["slug"] for p in posts]
+check("slug 고유", len(slugs) == len(set(slugs)))
+for p in posts:
+    f = ROOT / "posts" / f"{p['slug']}.md"
+    check(f"글 본문 존재: {p['slug']}", f.exists())
+    for key in ("slug", "title", "date", "tags"):
+        check(f"필수 키 {key}: {p['slug']}", key in p)
+
+# 3. index.html 참조
+html = (ROOT / "index.html").read_text(encoding="utf-8")
+versions = set(re.findall(r'\?v=([a-z0-9]+)', html))
+check("에셋 버전 쿼리 하나로 통일", len(versions) == 1, ",".join(versions))
+for asset in re.findall(r'(?:href|src)="\./([^"]+)\?v=', html):
+    check(f"참조 파일 존재: {asset}", (ROOT / asset).exists())
+check("canonical 설정", "https://jeonsul.github.io/" in html)
+check("robots/sitemap 연결", "sitemap.xml" in (ROOT / "robots.txt").read_text(encoding="utf-8"))
+
+# 4. 태그 일치
+app_js = (ROOT / "app.js").read_text(encoding="utf-8")
+m = re.search(r"const TAGS = \{([^}]*)\}", app_js)
+check("app.js TAGS 블록", bool(m))
+if m:
+    app_tags = set(re.findall(r"(\w+):", m.group(1)))
+    json_tags = {t for p in posts for t in p.get("tags", [])}
+    check("posts.json 태그가 TAGS 안에 있음", json_tags <= app_tags, f"{json_tags - app_tags}")
+
+# 5. 민감어 스캔 (노출 파일 대상, 대소문자 무시)
+scan_targets = [ROOT / f for f in REQUIRED if f.endswith((".html", ".js", ".json", ".xml", ".txt", ".svg"))]
+scan_targets += [ROOT / "posts" / f"{p['slug']}.md" for p in posts]
+for f in scan_targets:
+    text = f.read_text(encoding="utf-8", errors="replace").lower()
+    hits = [w for w in SENSITIVE if w in text]
+    check(f"민감어 0건: {f.name}", not hits, ",".join(hits))
+
+for p in posts:
+    f = ROOT / "posts" / f"{p['slug']}.md"
+    text = f.read_text(encoding="utf-8", errors="replace").lower()
+    hits = [w for w in CRED_WORDS if w in text]
+    check(f"인증정보 0건: {f.name}", not hits, ",".join(hits))
+
+# 6. 관리자 호환 globals
+check("app.js renderMarkdown 노출", "function renderMarkdown" in app_js)
+check("app.js GoatCounter 검증 유지", "GOATCOUNT RE" in app_js.replace(" ", "").replace("RE\"", "RE\"") or "GOATCOUNTER_RE" in app_js)
+check("admin.js 관리자 화면 유지", "BlogAdmin" in app_js and "BlogAdmin" in (ROOT / "admin.js").read_text(encoding="utf-8"))
+
+print()
+if failures:
+    print(f"{len(failures)}개 실패: {failures}")
+    sys.exit(1)
+print("모든 스모크 테스트 통과 ✓")
