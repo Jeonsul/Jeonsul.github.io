@@ -335,6 +335,7 @@ function parseRoute() {
   if (parts[0] === 'tag' && parts[1]) return { name: 'home', tag: parts[1] };
   if (parts[0] === 'archive') return { name: 'archive' };
   if (parts[0] === 'about') return { name: 'about' };
+  if (parts[0] === 'admin') return { name: 'admin', sub: parts[1] || '', arg: parts[2] || '' };
   return { name: 'missing' };
 }
 
@@ -350,6 +351,15 @@ function setActiveNav(route) {
 async function render({ keepScroll = false } = {}) {
   const route = parseRoute();
   setActiveNav(route);
+
+  if (route.name === 'admin' && window.BlogAdmin) {
+    document.body.classList.remove('is-post');
+    document.title = '관리 · 전국';
+    $progress.classList.remove('is-on');
+    await window.BlogAdmin.render($main, route);
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+    return;
+  }
 
   let html = '';
   let title = '전국 · 기록';
@@ -452,9 +462,66 @@ window.addEventListener('scroll', () => {
   updateProgress();
 }, { passive: true });
 
-window.addEventListener('hashchange', () => render());
+window.addEventListener('hashchange', () => {
+  render();
+  countView();
+});
 window.addEventListener('resize', updateProgress);
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
+/* ── 방문자 통계 (GoatCounter) ─────────────────────────────
+   site-config.json의 goatcounterCode가 채워져 있을 때만 켜집니다.
+   해시 라우팅이라 hashchange마다 현재 화면을 직접 세어 줍니다. */
+
+const GOATCOUNTER_RE = /^[a-z0-9][a-z0-9-]{1,49}$/;
+let analyticsOn = false;
+
+function countView() {
+  if (!analyticsOn) return;
+  if (location.hash.indexOf('#/admin') === 0) return; // 내 관리 화면은 세지 않는다
+  const gc = window.goatcounter;
+  if (gc && typeof gc.count === 'function') gc.count({ path: location.hash || '#/' });
+}
+
+async function startAnalytics() {
+  let config = null;
+  try {
+    const res = await fetch('./site-config.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    config = await res.json();
+  } catch (e) {
+    return;
+  }
+  const code = config && typeof config.goatcounterCode === 'string' ? config.goatcounterCode.trim().toLowerCase() : '';
+  if (!GOATCOUNTER_RE.test(code)) return;
+
+  window.goatcounter = window.goatcounter || {};
+  window.goatcounter.no_onload = true; // 로드는 직접 한 번, 이동은 hashchange마다 센다
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = 'https://gc.zgo.at/count.js';
+  script.setAttribute('data-goatcounter', `https://${code}.goatcounter.com/count`);
+  script.addEventListener('load', () => {
+    analyticsOn = true;
+    countView();
+  });
+  script.addEventListener('error', () => {
+    analyticsOn = false;
+  });
+  document.head.appendChild(script);
+}
+
+// 관리자 화면에서 쓸 수 있도록 캐시를 밖에서도 비울 수 있게 둔다.
+window.blogData = {
+  getIndex,
+  getPost,
+  invalidate() {
+    indexCache = null;
+    postCache.clear();
+  },
+};
+
 render();
+startAnalytics();
