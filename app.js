@@ -819,7 +819,6 @@ async function render({ keepScroll = false } = {}) {
 
   if (route.name === 'home') {
     wireSearch();
-    fillReadingTimes();
     rankPopular();
     if (pendingSearchFocus) {
       pendingSearchFocus = false;
@@ -828,6 +827,8 @@ async function render({ keepScroll = false } = {}) {
   } else {
     pendingSearchFocus = false;
   }
+
+  if (route.name === 'home' || route.name === 'archive') fillReadingTimes();
 }
 
 /* ── reading progress ────────────────────────────────────── */
