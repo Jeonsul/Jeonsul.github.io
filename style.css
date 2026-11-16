@@ -260,7 +260,7 @@ main:focus { outline: none; }
   gap: clamp(0.5rem, 1.8vw, 1.1rem);
 }
 
-.nav a {
+.nav a[data-nav] {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
@@ -272,9 +272,9 @@ main:focus { outline: none; }
   transition: color 0.2s ease;
 }
 
-.nav a:hover { color: var(--fg); }
+.nav a[data-nav]:hover { color: var(--fg); }
 
-.nav a[aria-current="page"] { color: var(--fg); font-weight: 700; }
+.nav a[data-nav][aria-current="page"] { color: var(--fg); font-weight: 700; }
 
 .icon-btn {
   display: grid;
@@ -1780,7 +1780,7 @@ main { min-height: 70vh; padding-bottom: 5rem; }
   .header-inner { height: 3.7rem; }
   .brand-en { display: none; }
   .header-admin { display: none; }
-  .nav a { font-size: 0.9rem; }
+  .nav a[data-nav] { font-size: 0.9rem; }
 
   .hero {
     grid-template-columns: 1fr;
