@@ -1201,7 +1201,8 @@
         photoInput.click();
       });
       photoInput.addEventListener('change', () => {
-        const picked = photoInput.files;
+        // FileList는 인풋에 붙어 있는 살아 있는 목록이라, value를 비우기 전에 배열로 복사해야 한다.
+        const picked = Array.prototype.slice.call(photoInput.files || []);
         photoInput.value = '';
         handlePhotoFiles(picked);
       });
