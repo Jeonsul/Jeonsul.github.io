@@ -320,7 +320,7 @@ check("설정 저장 시 두 키 함께", "Object.assign({}, state.config" in ad
 
 versions = set(re.findall(r"\?v=([a-z0-9]+)", html))
 check("캐시 버전 하나로 통일", len(versions) == 1, ",".join(versions))
-check("캐시 버전 갱신", "20261117e" in versions, ",".join(versions))
+check("캐시 버전 갱신", "20261117f" in versions, ",".join(versions))
 
 print()
 if failures:
