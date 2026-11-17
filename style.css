@@ -852,17 +852,26 @@ main { min-height: 70vh; padding-bottom: 5rem; }
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.1rem;
+}
+
+.pop-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .pop-list a {
+  flex: 1 1 auto;
+  min-width: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.4rem 0.5rem;
+  gap: 0.65rem;
+  padding: 0.38rem 0.5rem;
   margin: 0 -0.5rem;
-  border-radius: 12px;
+  border-radius: 10px;
   text-decoration: none;
   transition: background-color 0.18s ease;
 }
@@ -896,7 +905,13 @@ main { min-height: 70vh; padding-bottom: 5rem; }
   word-break: keep-all;
 }
 
-.pop-meta { grid-column: 2; font-size: 0.7188rem; color: var(--muted); }
+.pop-meta {
+  flex: none;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 .topic-list {
   margin: 0;

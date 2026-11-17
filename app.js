@@ -254,6 +254,7 @@ function heroArtSvg() {
         <stop offset="1" stop-color="#E8F3FF" stop-opacity="0.9"/>
       </linearGradient>
     </defs>
+    <ellipse cx="214" cy="160" rx="196" ry="122" fill="#3182F6" opacity="0.045"/>
     <circle cx="92" cy="160" r="56" fill="url(#ga)"/>
     <circle cx="92" cy="160" r="56" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
     <path d="M66 172c8-11 16-16 26-16" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" fill="none" opacity="0.85"/>
