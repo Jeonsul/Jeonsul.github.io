@@ -240,6 +240,8 @@ function tagOf(post) {
   return (post.tags || []).find((t) => TAGS[t]) || null;
 }
 
+/* 히어로 일러스트 — 가운데 띠(세로 100~220) 안에만 내용을 두어,
+   모바일에서 위아래를 잘라 납작하게 보여 줘도 그림이 잘리지 않는다. */
 function heroArtSvg() {
   return `<svg viewBox="0 0 420 320" role="img" aria-label="">
     <defs>
@@ -252,23 +254,18 @@ function heroArtSvg() {
         <stop offset="1" stop-color="#E8F3FF" stop-opacity="0.9"/>
       </linearGradient>
     </defs>
-    <circle cx="96" cy="120" r="58" fill="url(#ga)"/>
-    <circle cx="96" cy="120" r="58" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
-    <path d="M60 132c10-14 20-20 30-20" stroke="#ffffff" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.85"/>
-    <rect x="168" y="52" width="180" height="116" rx="24" fill="url(#gb)"/>
-    <rect x="168" y="52" width="180" height="116" rx="24" fill="none" stroke="#3182F6" stroke-opacity="0.25" stroke-width="2"/>
-    <rect x="192" y="80" width="104" height="12" rx="6" fill="#3182F6" opacity="0.75"/>
-    <rect x="192" y="104" width="132" height="12" rx="6" fill="#3182F6" opacity="0.35"/>
-    <rect x="192" y="128" width="76" height="12" rx="6" fill="#3182F6" opacity="0.22"/>
-    <rect x="120" y="196" width="200" height="84" rx="22" fill="#ffffff"/>
-    <rect x="120" y="196" width="200" height="84" rx="22" fill="none" stroke="#3182F6" stroke-opacity="0.25" stroke-width="2"/>
-    <circle cx="158" cy="238" r="18" fill="#3182F6"/>
-    <path d="M151 238l5 5 9-11" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <rect x="188" y="222" width="104" height="11" rx="5.5" fill="#3182F6" opacity="0.5"/>
-    <rect x="188" y="243" width="72" height="11" rx="5.5" fill="#3182F6" opacity="0.25"/>
-    <path d="M330 160l6 14 14 6-14 6-6 14-6-14-14-6 14-6z" fill="#3182F6" opacity="0.8"/>
-    <circle cx="376" cy="96" r="10" fill="#3182F6" opacity="0.35"/>
-    <circle cx="52" cy="236" r="7" fill="#3182F6" opacity="0.3"/>
+    <circle cx="92" cy="160" r="56" fill="url(#ga)"/>
+    <circle cx="92" cy="160" r="56" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+    <path d="M66 172c8-11 16-16 26-16" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" fill="none" opacity="0.85"/>
+    <rect x="172" y="104" width="196" height="112" rx="24" fill="url(#gb)"/>
+    <rect x="172" y="104" width="196" height="112" rx="24" fill="none" stroke="#3182F6" stroke-opacity="0.22" stroke-width="2"/>
+    <rect x="196" y="130" width="104" height="12" rx="6" fill="#3182F6" opacity="0.78"/>
+    <rect x="196" y="154" width="140" height="12" rx="6" fill="#3182F6" opacity="0.34"/>
+    <rect x="196" y="178" width="76" height="12" rx="6" fill="#3182F6" opacity="0.2"/>
+    <path d="M356 118l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#3182F6" opacity="0.75"/>
+    <circle cx="392" cy="128" r="4.5" fill="#3182F6" opacity="0.35"/>
+    <circle cx="378" cy="204" r="8" fill="#3182F6" opacity="0.28"/>
+    <circle cx="48" cy="222" r="6" fill="#3182F6" opacity="0.25"/>
   </svg>`;
 }
 

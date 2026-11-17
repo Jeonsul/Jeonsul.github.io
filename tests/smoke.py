@@ -95,6 +95,23 @@ check("app.js renderMarkdown 노출", "function renderMarkdown" in app_js)
 check("app.js GoatCounter 검증 유지", "GOATCOUNT RE" in app_js.replace(" ", "").replace("RE\"", "RE\"") or "GOATCOUNTER_RE" in app_js)
 check("admin.js 관리자 화면 유지", "BlogAdmin" in app_js and "BlogAdmin" in (ROOT / "admin.js").read_text(encoding="utf-8"))
 
+# 7. 모바일 레이아웃 회귀 방지 — column flex에서 검색창이 240px 높이로 늘어나던 버그
+css = (ROOT / "style.css").read_text(encoding="utf-8")
+box = re.search(r"\.search-box \{([^}]*)\}", css)
+check("검색창 height 고정", bool(box) and "height: 2.75rem" in box.group(1))
+check("검색 입력창 height 100%", re.search(r"\.search-box input \{[^}]*height: 100%", css) is not None)
+
+mobile = re.search(r"@media \(max-width: 720px\) \{(.*?)\n\}", css, re.S)
+block = mobile.group(1) if mobile else ""
+check("모바일 검색창 flex: 0 0 auto", re.search(r"\.search-box \{[^}]*flex: 0 0 auto", block) is not None)
+check("모바일 검색창 폭 100%", re.search(r"\.search-box \{[^}]*width: 100%", block) is not None)
+check("모바일 검색창 max-width 해제", re.search(r"\.search-box \{[^}]*max-width: none", block) is not None)
+check("모바일 히어로 일러스트 높이 제한", ".hero-art" in block and "clamp(7.5rem, 34vw, 12rem)" in block)
+check("터치 기기 '/' 배지 숨김",
+      re.search(r"@media \(max-width: 860px\), \(hover: none\) \{[^}]*\.search-kbd \{ display: none; \}", css) is not None)
+foot = re.search(r"\.site-footer \{([^}]*)\}", css)
+check("푸터 safe-area 여백", bool(foot) and "env(safe-area-inset-bottom" in foot.group(1))
+
 print()
 if failures:
     print(f"{len(failures)}개 실패: {failures}")
