@@ -43,9 +43,25 @@ function tagLinks(tags) {
 
 let headingSeq = 0;
 
+/* 사진 설명 자리에 그대로 남아 있는 기본값 — 이건 캡션으로 보여 주지 않는다. */
+const PLACEHOLDER_ALTS = ['', 'image', 'img', 'photo', 'picture', '사진', '사진 설명', '사진설명', '이미지', 'caption'];
+
+function isPlaceholderAlt(alt) {
+  return PLACEHOLDER_ALTS.indexOf(String(alt == null ? '' : alt).trim().toLowerCase()) >= 0;
+}
+
+const IMG_LINE_RE = /^\s*!\[([^\]]*)\]\(\s*([^)\s]+?)(?:\s+"([^"]*)")?\s*\)\s*$/;
+
+function captionOf(alt) {
+  return isPlaceholderAlt(alt) ? '' : String(alt).trim();
+}
+
 function renderInline(text) {
   let s = text;
-  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+  s = s.replace(
+    /!\[([^\]]*)\]\(\s*([^)\s]+?)(?:\s+"([^"]*)")?\s*\)/g,
+    '<img class="post-img" src="$2" alt="$1" loading="lazy" decoding="async">'
+  );
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
   s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -54,18 +70,39 @@ function renderInline(text) {
   return s;
 }
 
+/* 사진 한 장이 혼자 선 줄은 figure로 감싸 캡션을 달 수 있게 한다. */
+function figureHtml(alt, src) {
+  const caption = captionOf(alt);
+  const label = caption ? '사진 크게 보기: ' + caption : '사진 크게 보기';
+  return (
+    '<figure class="post-figure">' +
+    `<img class="post-img" src="${src}" alt="${alt}" loading="lazy" decoding="async" tabindex="0" role="button" aria-label="${escapeHtml(label)}">` +
+    (caption ? `<figcaption>${caption}</figcaption>` : '') +
+    '</figure>'
+  );
+}
+
 function renderMarkdown(md) {
   const lines = md.replace(/\r\n?/g, '\n').split('\n');
   const out = [];
   let i = 0;
   headingSeq = 0;
   const isBlockStart = (line) =>
+    IMG_LINE_RE.test(line) ||
     /^\s*(```|#{1,6}\s|>\s?|[-*+]\s|\d+\.\s)/.test(line) || /^\s*(-{3,}|\*{3,})\s*$/.test(line);
 
   while (i < lines.length) {
     const line = lines[i];
 
     if (!line.trim()) { i++; continue; }
+
+    // 사진 한 장만 있는 줄 → figure (글 본문에서 탭하면 라이트박스로 크게)
+    const pic = line.match(IMG_LINE_RE);
+    if (pic) {
+      out.push(figureHtml(escapeHtml(pic[1]), escapeHtml(pic[2])));
+      i++;
+      continue;
+    }
 
     // fenced code
     const fence = line.match(/^\s*```(\w*)\s*$/);
@@ -557,6 +594,102 @@ function wireCopyLink() {
   });
 }
 
+/* ── lightbox (본문 사진 크게 보기) ─────────────────────── */
+
+let $lightbox = null;
+let lastPhotoFocus = null;
+
+function buildLightbox() {
+  if ($lightbox) return $lightbox;
+  const el = document.createElement('div');
+  el.className = 'lightbox';
+  el.id = 'lightbox';
+  el.hidden = true;
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.setAttribute('aria-label', '사진 크게 보기');
+  el.innerHTML =
+    '<button class="lightbox-close" type="button" aria-label="사진 닫기">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>' +
+    '</button><img class="lightbox-img" alt=""><p class="lightbox-caption"></p>';
+  el.addEventListener('click', (e) => {
+    if (e.target === el || (e.target.closest && e.target.closest('.lightbox-close'))) closeLightbox();
+  });
+  document.body.appendChild(el);
+  $lightbox = el;
+  return el;
+}
+
+function openLightbox(img) {
+  if (!img) return;
+  const el = buildLightbox();
+  const big = el.querySelector('.lightbox-img');
+  const cap = el.querySelector('.lightbox-caption');
+  const caption = captionOf(img.getAttribute('alt') || '');
+  big.src = img.currentSrc || img.src;
+  big.alt = caption || '사진';
+  if (cap) {
+    cap.textContent = caption;
+    cap.hidden = !caption;
+  }
+  lastPhotoFocus = img;
+  el.hidden = false;
+  document.body.classList.add('is-lightbox');
+  const close = el.querySelector('.lightbox-close');
+  if (close) close.focus({ preventScroll: true });
+}
+
+function closeLightbox() {
+  if (!$lightbox || $lightbox.hidden) return;
+  $lightbox.hidden = true;
+  const big = $lightbox.querySelector('.lightbox-img');
+  if (big) big.removeAttribute('src');
+  document.body.classList.remove('is-lightbox');
+  if (lastPhotoFocus && document.contains(lastPhotoFocus)) {
+    lastPhotoFocus.focus({ preventScroll: true });
+  }
+  lastPhotoFocus = null;
+}
+
+/* 본문·관리자 미리보기의 사진을 누르면 크게 본다. */
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  const img = t && t.closest ? t.closest('.prose img.post-img') : null;
+  if (!img) return;
+  e.preventDefault();
+  openLightbox(img);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $lightbox && !$lightbox.hidden) {
+    closeLightbox();
+    return;
+  }
+  if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') && e.target && e.target.classList) {
+    if (e.target.classList.contains('post-img')) {
+      e.preventDefault();
+      openLightbox(e.target);
+    }
+  }
+});
+
+/* 새로 올린 사진은 CDN 반영이 몇십 초 늦을 수 있다 → 한 번만 다시 불러 본다. */
+function wirePhotoRetry() {
+  document.querySelectorAll('.prose img.post-img').forEach((img) => {
+    if (img.dataset.retryWired) return;
+    img.dataset.retryWired = '1';
+    img.addEventListener('error', () => {
+      if (img.dataset.retried) return;
+      img.dataset.retried = '1';
+      setTimeout(() => {
+        const src = img.getAttribute('src') || '';
+        if (!src) return;
+        img.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'r=' + Date.now();
+      }, 4000);
+    });
+  });
+}
+
 /* ── home enhancements ───────────────────────────────────── */
 
 function fillReadingTimes() {
@@ -739,7 +872,8 @@ function wireReveal() {
 /* ── router ──────────────────────────────────────────────── */
 
 function parseRoute() {
-  const hash = location.hash.replace(/^#\/?/, '');
+  // '#/post/x'와 Disqus가 돌려보내는 '#!post/x'·'#!/post/x'를 모두 같은 길로 본다.
+  const hash = location.hash.replace(/^#(!)?\/?/, '');
   const parts = hash.split('/').filter(Boolean).map(decodeURIComponent);
   if (!parts.length) return { name: 'home' };
   if (parts[0] === 'post' && parts[1]) return { name: 'post', slug: parts[1] };
@@ -814,8 +948,14 @@ async function render({ keepScroll = false } = {}) {
 
   wireCopyLink();
   wireCodeCopy();
+  wirePhotoRetry();
   buildToc();
   wireReveal();
+
+  if (route.name === 'post') {
+    const current = (indexCache || []).find((p) => p.slug === route.slug);
+    if (current) mountComments(current);
+  }
 
   if (route.name === 'home') {
     wireSearch();
@@ -858,6 +998,7 @@ function applyTheme(theme) {
   const metas = document.querySelectorAll('meta[name="theme-color"]');
   const color = dark ? '#101013' : '#ffffff';
   metas.forEach((m) => m.setAttribute('content', color));
+  refreshComments();
 }
 
 if ($toggle) {
@@ -881,12 +1022,184 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 window.addEventListener('hashchange', () => {
+  closeLightbox();
   render();
   countView();
 });
 window.addEventListener('resize', updateProgress);
 
 document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ── 댓글 (Disqus) ────────────────────────────────────────
+   site-config.json의 disqusShortname이 채워져 있을 때만 글 아래에 붙습니다.
+   해시 라우팅이라 Disqus에는 #! 주소를 글 식별자와 함께 넘깁니다. */
+
+const SITE_ORIGIN = 'https://jeonsul.github.io';
+const SHORTNAME_RE = /^[a-z0-9][a-z0-9-]{1,49}$/;
+
+let siteConfig = null;
+let siteConfigPromise = null;
+
+function loadSiteConfig() {
+  if (siteConfigPromise) return siteConfigPromise;
+  siteConfigPromise = fetch('./site-config.json', { cache: 'no-store' })
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null)
+    .then((cfg) => {
+      siteConfig = cfg && typeof cfg === 'object' && !Array.isArray(cfg) ? cfg : {};
+      return siteConfig;
+    });
+  return siteConfigPromise;
+}
+
+function disqusShortname() {
+  const raw = siteConfig && typeof siteConfig.disqusShortname === 'string' ? siteConfig.disqusShortname.trim().toLowerCase() : '';
+  return SHORTNAME_RE.test(raw) ? raw : '';
+}
+
+/* 같은 글이면 같은 주소·같은 식별자를 쓴다. Disqus 알림 메일도 이 주소로 온다. */
+function postShareUrl(slug) {
+  return SITE_ORIGIN + '/#!/post/' + encodeURIComponent(slug);
+}
+
+function disqusConfig(post) {
+  return function () {
+    this.page = this.page || {};
+    this.page.url = postShareUrl(post.slug);
+    this.page.identifier = post.slug;
+    this.page.title = post.title;
+  };
+}
+
+const disqus = { loading: false, failed: false, timer: null };
+
+function commentsFallback(message) {
+  const host = document.getElementById('postComments');
+  if (!host) return;
+  const note = host.querySelector('.comments-fallback');
+  const thread = host.querySelector('#disqus_thread');
+  if (thread) thread.hidden = true;
+  if (note) {
+    note.textContent = message;
+    note.hidden = false;
+  }
+}
+
+function injectDisqus(shortname) {
+  // 이미 한 번 붙인 스크립트는 남겨 두지 않고 새로 붙인다.
+  document.querySelectorAll('script[data-disqus-embed]').forEach((el) => el.remove());
+  disqus.loading = true;
+  const script = document.createElement('script');
+  script.src = `https://${shortname}.disqus.com/embed.js`;
+  script.async = true;
+  script.setAttribute('data-timestamp', String(Date.now()));
+  script.setAttribute('data-disqus-embed', shortname);
+  script.addEventListener('load', () => {
+    disqus.loading = false;
+  });
+  script.addEventListener('error', () => {
+    disqus.loading = false;
+    disqus.failed = true;
+    commentsFallback('댓글을 불러오지 못했습니다. 네트워크나 광고 차단 설정에서 disqus.com을 막고 있지 않은지 확인해 주세요.');
+  });
+  document.head.appendChild(script);
+
+  if (disqus.timer) clearTimeout(disqus.timer);
+  disqus.timer = setTimeout(() => {
+    if (!window.DISQUS) {
+      disqus.failed = true;
+      commentsFallback('댓글을 불러오지 못했습니다. 잠시 뒤 새로고침하거나 disqus.com 차단 여부를 확인해 주세요.');
+    }
+  }, 12000);
+}
+
+function mountComments(post) {
+  const shortname = disqusShortname();
+  if (!post || !shortname) return;
+  const article = document.querySelector('.post');
+  if (!article) return;
+
+  let host = document.getElementById('postComments');
+  if (!host) {
+    host = document.createElement('section');
+    host.className = 'post-comments';
+    host.id = 'postComments';
+    host.setAttribute('aria-label', '댓글');
+    host.innerHTML =
+      '<div class="comments-head"><h2>댓글</h2>' +
+      '<p class="comments-note">Disqus 계정으로 남길 수 있습니다.</p></div>' +
+      '<div id="disqus_thread"></div>' +
+      '<p class="comments-fallback" hidden></p>';
+    const footer = article.querySelector('.post-footer');
+    if (footer && footer.parentNode) footer.parentNode.insertBefore(host, footer.nextSibling);
+    else article.appendChild(host);
+  }
+  host.dataset.theme = document.documentElement.dataset.theme || 'light';
+
+  if (!window.DISQUS) {
+    window.disqus_config = disqusConfig(post);
+    if (disqus.loading) return; // 스크립트가 오는 중 — 그때의 설정을 쓴다
+    if (disqus.failed) {
+      commentsFallback('댓글을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.');
+      return;
+    }
+    injectDisqus(shortname);
+    return;
+  }
+
+  // 이미 불러온 상태 — 스레드를 이 글로, 지금 테마로 다시 그린다.
+  try {
+    window.DISQUS.reset({ reload: true, config: disqusConfig(post) });
+  } catch (e) {
+    /* 재설정이 실패해도 글은 그대로 읽을 수 있게 둔다 */
+  }
+}
+
+/* 테마를 바꾸면 댓글 카드와 스레드를 새 색으로 다시 그린다. */
+function refreshComments() {
+  const route = parseRoute();
+  if (route.name !== 'post') return;
+  const post = (indexCache || []).find((p) => p.slug === route.slug);
+  if (!post) return;
+  const host = document.getElementById('postComments');
+  if (host) host.dataset.theme = document.documentElement.dataset.theme || 'light';
+  if (window.DISQUS && disqusShortname()) {
+    try {
+      window.DISQUS.reset({ reload: true, config: disqusConfig(post) });
+    } catch (e) {
+      /* 무시 */
+    }
+  }
+}
+
+/* 주소의 ?post={slug} 하나만 꺼낸다 (URLSearchParams 없이도 동작하게). */
+function queryParam(name) {
+  const query = String(location.search || '').replace(/^\?/, '');
+  if (!query) return '';
+  const pairs = query.split('&');
+  for (let i = 0; i < pairs.length; i++) {
+    const at = pairs[i].indexOf('=');
+    const key = at < 0 ? pairs[i] : pairs[i].slice(0, at);
+    if (decodeURIComponent(key) !== name) continue;
+    return decodeURIComponent((at < 0 ? '' : pairs[i].slice(at + 1)).replace(/\+/g, ' '));
+  }
+  return '';
+}
+
+/* Disqus 알림 링크가 ?post={slug}로 오는 경우를 #/post/{slug}로 받아 준다. */
+function routeFromQuery() {
+  const hash = location.hash;
+  if (hash && hash !== '#' && hash !== '#/') return;
+  let slug = '';
+  try {
+    slug = queryParam('post');
+  } catch (e) {
+    slug = '';
+  }
+  slug = slug.trim();
+  if (!slug) return;
+  location.hash = '#/post/' + encodeURIComponent(slug);
+}
 
 /* ── 방문자 통계 (GoatCounter) ─────────────────────────────
    site-config.json의 goatcounterCode가 채워져 있을 때만 켜집니다.
@@ -904,14 +1217,7 @@ function countView() {
 }
 
 async function startAnalytics() {
-  let config = null;
-  try {
-    const res = await fetch('./site-config.json', { cache: 'no-store' });
-    if (!res.ok) return;
-    config = await res.json();
-  } catch (e) {
-    return;
-  }
+  const config = await loadSiteConfig();
   const code = config && typeof config.goatcounterCode === 'string' ? config.goatcounterCode.trim().toLowerCase() : '';
   if (!GOATCOUNTER_RE.test(code)) return;
   goatcounterCode = code;
@@ -944,5 +1250,6 @@ window.blogData = {
   },
 };
 
+routeFromQuery();
 render();
 startAnalytics();

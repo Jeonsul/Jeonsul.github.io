@@ -23,7 +23,7 @@
     persist: true,
     draft: null,
     index: [],
-    config: { goatcounterCode: '' },
+    config: { goatcounterCode: '', disqusShortname: '' },
     configSha: null,
     flash: null,
     seq: 0,
@@ -74,6 +74,251 @@
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  /* ── 사진 준비 · 업로드 ─────────────────────────────────
+     에디터에서 고른 사진을 브라우저 안에서 줄인 뒤
+     GitHub Contents API(assets/uploads/...)로 올린다. */
+
+  const UPLOAD_ROOT = 'assets/uploads';
+  const PHOTO_EDGE = 1600; // 긴 변 최대 길이(px)
+  const PHOTO_QUALITY = 0.85;
+  const PHOTO_MAX_BYTES = 8 * 1024 * 1024; // 변환도 안 되는 파일의 상한
+  const GIF_KEEP_BYTES = 8 * 1024 * 1024; // 움직이는 GIF는 원본 그대로(애니메이션 보존)
+  const PHOTO_EXT_RE = /\.(jpe?g|png|webp|gif|heic|heif|bmp|avif|tiff?)$/i;
+  const DEFAULT_ALT = '사진 설명';
+
+  function humanSize(bytes) {
+    const n = Number(bytes) || 0;
+    if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + 'MB';
+    return Math.max(1, Math.round(n / 1024)) + 'KB';
+  }
+
+  function fileExt(name) {
+    const m = String(name || '').match(/\.([a-z0-9]+)$/i);
+    return m ? m[1].toLowerCase() : '';
+  }
+
+  /* 파일 이름에서 주소에 쓸 수 있는 부분만 남긴다 (한글 이름은 photo로) */
+  function safeFileName(name) {
+    const base = String(name || '').replace(/\.[^.]+$/, '');
+    const ascii = base
+      .replace(/[^\x20-\x7e]/g, '-')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40);
+    return ascii || 'photo';
+  }
+
+  function uploadDirStamp(date) {
+    const d = date || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function uploadFileName(name, ext) {
+    const rand = Math.random().toString(36).slice(2, 6);
+    return Date.now() + '-' + rand + '-' + safeFileName(name) + '.' + (ext || 'jpg');
+  }
+
+  function base64FromBytes(bytes) {
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+
+  function readBytes(blob) {
+    if (blob.arrayBuffer) return blob.arrayBuffer();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('READ_FAILED'));
+      reader.readAsArrayBuffer(blob);
+    });
+  }
+
+  function tooBigError(file) {
+    const err = new Error(
+      (file && file.name ? "'" + file.name + "' " : '고른 사진 ') +
+        humanSize(file && file.size) +
+        ' · 사진이 너무 큽니다. 8MB 이하 사진을 골라 주세요.'
+    );
+    err.tooBig = true;
+    return err;
+  }
+
+  /* 사진을 그릴 수 있는 소스(bitmap 또는 img)로 푼다. 실패하면 예외. */
+  async function decodePhoto(file) {
+    if (window.createImageBitmap) {
+      try {
+        const bitmap = await window.createImageBitmap(file);
+        return {
+          source: bitmap,
+          width: bitmap.width,
+          height: bitmap.height,
+          release: () => {
+            if (bitmap.close) bitmap.close();
+          },
+        };
+      } catch (e) {
+        /* 사파리에서 HEIC 등은 이 길로 못 갈 수 있다 — 아래 img 경로로 */
+      }
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      if (img.decode) await img.decode();
+      else
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      if (!img.naturalWidth || !img.naturalHeight) throw new Error('NO_SIZE');
+      return {
+        source: img,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        release: () => URL.revokeObjectURL(url),
+      };
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      throw e;
+    }
+  }
+
+  function canvasWebpSupported() {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function toBlobAsync(canvas, type, quality) {
+    return new Promise((resolve) => {
+      if (!canvas.toBlob) return resolve(null);
+      canvas.toBlob((blob) => resolve(blob || null), type, quality);
+    });
+  }
+
+  /* 긴 변을 PHOTO_EDGE로 줄여 WebP(실패하면 JPEG)로 다시 담는다. */
+  async function shrinkPhoto(source, width, height) {
+    if (!width || !height) return null;
+    const scale = Math.min(1, PHOTO_EDGE / Math.max(width, height));
+    const w = Math.max(1, Math.round(width * scale));
+    const h = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.imageSmoothingEnabled = true;
+    if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, w, h);
+
+    const webp = canvasWebpSupported();
+    let blob = await toBlobAsync(canvas, webp ? 'image/webp' : 'image/jpeg', PHOTO_QUALITY);
+    let ext = webp ? 'webp' : 'jpg';
+    let mime = webp ? 'image/webp' : 'image/jpeg';
+    if (!blob) {
+      blob = await toBlobAsync(canvas, 'image/jpeg', PHOTO_QUALITY);
+      ext = 'jpg';
+      mime = 'image/jpeg';
+    }
+    if (!blob) return null;
+    return { blob: blob, ext: ext, mime: mime, width: w, height: h, resized: scale < 1 };
+  }
+
+  async function optimizePhoto(file) {
+    const ext = fileExt(file.name);
+    const type = String(file.type || '').toLowerCase();
+    const looksImage = type.indexOf('image/') === 0 || PHOTO_EXT_RE.test('.' + ext);
+    if (!looksImage) {
+      const err = new Error(
+        (file.name ? "'" + file.name + "'는" : '고른 파일은') +
+          ' 사진이 아닙니다. JPEG·PNG·WEBP·GIF·HEIC 사진을 골라 주세요.'
+      );
+      err.notImage = true;
+      throw err;
+    }
+
+    // 움직이는 GIF: 캔버스를 거치면 첫 장면만 남으므로 원본을 그대로 올린다.
+    if (type === 'image/gif' || ext === 'gif') {
+      if (file.size > GIF_KEEP_BYTES) throw tooBigError(file);
+      return { blob: file, ext: 'gif', mime: 'image/gif', original: true, width: 0, height: 0 };
+    }
+    // 벡터(SVG)는 다시 그리면 의미가 없다.
+    if (type === 'image/svg+xml' || ext === 'svg') {
+      if (file.size > PHOTO_MAX_BYTES) throw tooBigError(file);
+      return { blob: file, ext: 'svg', mime: 'image/svg+xml', original: true };
+    }
+
+    let decoded = null;
+    try {
+      decoded = await decodePhoto(file);
+      const out = await shrinkPhoto(decoded.source, decoded.width, decoded.height);
+      if (out) {
+        // 이미 작은 사진은 다시 담는 쪽이 더 무거울 수 있다 — 원본 유지
+        if (!out.resized && out.blob.size >= file.size && file.size <= PHOTO_MAX_BYTES) {
+          return {
+            blob: file,
+            ext: ext || out.ext,
+            mime: type || out.mime,
+            original: true,
+            width: out.width,
+            height: out.height,
+          };
+        }
+        return out;
+      }
+    } catch (e) {
+      /* 캔버스로 못 읽는 포맷은 원본 바이너리로 넘긴다 */
+    } finally {
+      if (decoded && decoded.release) decoded.release();
+    }
+
+    if (file.size > PHOTO_MAX_BYTES) throw tooBigError(file);
+    return { blob: file, ext: ext || 'jpg', mime: type || 'application/octet-stream', original: true };
+  }
+
+  async function uploadPhoto(file) {
+    const optimized = await optimizePhoto(file);
+    const path = UPLOAD_ROOT + '/' + uploadDirStamp(new Date()) + '/' + uploadFileName(file.name, optimized.ext);
+    const bytes = new Uint8Array(await readBytes(optimized.blob));
+    const res = await gh(`/repos/${OWNER}/${REPO}/contents/${path}`, {
+      method: 'PUT',
+      body: {
+        message: '사진 추가: ' + path.split('/').pop(),
+        content: base64FromBytes(bytes),
+        branch: BRANCH,
+      },
+    });
+    return {
+      path: path,
+      optimized: optimized,
+      sha: res && res.content ? res.content.sha : null,
+    };
+  }
+
+  function photoMarkdown(path) {
+    return '![' + DEFAULT_ALT + '](./' + path + ')';
+  }
+
+  /* 사진은 독립된 줄에 놓여야 figure로 그려진다 → 앞뒤에 빈 줄을 만든다. */
+  function insertPhotoBlock(value, start, end, md) {
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const lead = !before ? '' : /\n\s*\n$/.test(before) ? '' : /\n$/.test(before) ? '\n' : '\n\n';
+    const tail = !after ? '\n' : /^\n/.test(after) ? '\n' : '\n\n';
+    const block = lead + md + tail;
+    return { value: before + block + after, caret: (before + block).length };
   }
 
   function tagLabel(t) {
@@ -279,11 +524,18 @@
 
   async function loadConfig() {
     const file = await getFile('site-config.json');
-    let cfg = { goatcounterCode: '' };
+    const cfg = { goatcounterCode: '', disqusShortname: '' };
     if (file) {
       try {
         const parsed = JSON.parse(file.text);
-        if (parsed && typeof parsed === 'object') cfg.goatcounterCode = typeof parsed.goatcounterCode === 'string' ? parsed.goatcounterCode : '';
+        if (parsed && typeof parsed === 'object') {
+          // 모르는 키는 그대로 보존한다.
+          Object.keys(parsed).forEach((key) => {
+            cfg[key] = parsed[key];
+          });
+          cfg.goatcounterCode = typeof parsed.goatcounterCode === 'string' ? parsed.goatcounterCode : '';
+          cfg.disqusShortname = typeof parsed.disqusShortname === 'string' ? parsed.disqusShortname : '';
+        }
       } catch (e) {
         /* 깨진 설정은 빈 값으로 본다 */
       }
@@ -440,6 +692,7 @@
 
   function dashboardHtml(index, config, done) {
     const code = config.goatcounterCode || '';
+    const disqus = config.disqusShortname || '';
     const posts = index
       .map(
         (p) => `<li class="admin-post">
@@ -474,7 +727,7 @@
       <section class="admin-card fade-in">
         <div class="admin-card-head">
           <h2>방문자 통계</h2>
-          <span class="admin-card-tag">GoatCounter</span>
+          <span class="admin-card-tag">GoatCounter · Disqus</span>
         </div>
         <div id="adminStats" class="admin-stats">
           ${
@@ -499,10 +752,16 @@
         <p class="admin-hint">숫자가 ‘–’로 보이면 GoatCounter <b>Settings</b>에서 <b>Allow adding visitor counts on your website</b>를 켜고, <b>Site’s Domain</b>에 <code>jeonsul.github.io</code>를 넣어 주세요. 설정을 바꾼 뒤 몇 분 걸릴 수 있습니다.</p>
 
         <form id="adminConfig" class="admin-form admin-config" novalidate>
+          <p class="admin-form-title">사이트 설정</p>
           <label class="field">
             <span class="field-label">GoatCounter 코드</span>
             <input id="adminCode" type="text" value="${esc(code)}" placeholder="jeonsul" autocomplete="off" autocapitalize="off" spellcheck="false">
             <span class="field-hint">가입할 때 정한 코드입니다. 비우고 저장하면 추적을 끕니다. 예: <code>jeonsul</code> → https://jeonsul.goatcounter.com</span>
+          </label>
+          <label class="field">
+            <span class="field-label">Disqus Shortname</span>
+            <input id="adminDisqus" type="text" value="${esc(disqus)}" placeholder="jeonsul" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <span class="field-hint">Disqus에 사이트를 만들고 정한 shortname입니다. 넣으면 글 아래에 댓글이 붙고, 비우면 댓글 영역이 아예 나타나지 않습니다. 예: <code>jeonsul</code> → https://jeonsul.disqus.com</span>
           </label>
           <div class="admin-actions">
             <button class="btn btn-primary" type="submit">설정 저장</button>
@@ -680,6 +939,15 @@
               <button type="button" role="tab" data-view="preview" aria-selected="false">미리보기</button>
             </div>
           </div>
+          <div class="upload-bar">
+            <div class="upload-row">
+              <button class="btn btn-sm upload-btn" type="button" id="photoPick">📷 사진 넣기</button>
+              <input class="photo-input" id="photoInput" type="file" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+              <span class="upload-hint">끌어다 놓거나 붙여넣어도 됩니다</span>
+            </div>
+            <p class="upload-status" id="uploadStatus" role="status" aria-live="polite"></p>
+            <ul class="upload-strip" id="uploadStrip" aria-label="올린 사진" hidden></ul>
+          </div>
           <div class="editor-panes">
             <textarea id="fBody" spellcheck="false" placeholder="# 제목&#10;&#10;본문을 씁니다. **굵게**, *기울임*, &#96;코드&#96;, - 목록, &gt; 인용을 쓸 수 있습니다.">${esc(draft.body)}</textarea>
             <div class="editor-preview prose" id="fPreview" aria-live="polite"></div>
@@ -750,6 +1018,7 @@
       fPreview.innerHTML = md.trim()
         ? renderMarkdown(md)
         : '<p class="admin-empty">본문을 쓰면 여기에 그대로 보입니다.</p>';
+      paintLocalPhotos();
     }
 
     function syncSlugHint() {
@@ -820,6 +1089,172 @@
       else draft.tags.push(id);
       scheduleSave();
     });
+
+    /* ── 사진 넣기 ───────────────────────────────────────
+       고른 사진을 줄여 올리고, 커서 자리에 마크다운을 넣는다.
+       방금 올린 사진은 CDN에 아직 없으므로 미리보기·썰네일은
+       브라우저 안의 blob 주소로 바로 보여 준다. */
+
+    const photoPick = document.getElementById('photoPick');
+    const photoInput = document.getElementById('photoInput');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const uploadStrip = document.getElementById('uploadStrip');
+    const panes = form.querySelector('.editor-panes');
+    const localPhotos = new Map(); // 'assets/uploads/...' → blob 주소
+    let photoBusy = false;
+
+    function paintLocalPhotos() {
+      if (!localPhotos.size || !fPreview) return;
+      fPreview.querySelectorAll('img').forEach((img) => {
+        const key = String(img.getAttribute('src') || '').replace(/^\.\//, '');
+        const local = localPhotos.get(key);
+        if (local && img.getAttribute('src') !== local) img.setAttribute('src', local);
+      });
+    }
+
+    function addThumb(url, name) {
+      if (!uploadStrip) return;
+      uploadStrip.hidden = false;
+      const li = document.createElement('li');
+      li.className = 'upload-thumb';
+      li.title = name || '사진';
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      img.loading = 'lazy';
+      li.appendChild(img);
+      uploadStrip.appendChild(li);
+      uploadStrip.scrollLeft = uploadStrip.scrollWidth;
+    }
+
+    function photoErrorText(err, file) {
+      if (err && (err.tooBig || err.notImage)) return err.message;
+      return (file && file.name ? "'" + file.name + "' " : '사진 ') + '올리지 못했습니다. ' + apiErrorText(err);
+    }
+
+    function insertPhotoMarkdown(path) {
+      const value = fBody.value;
+      const start = typeof fBody.selectionStart === 'number' ? fBody.selectionStart : value.length;
+      const end = typeof fBody.selectionEnd === 'number' ? fBody.selectionEnd : start;
+      const next = insertPhotoBlock(value, start, end, photoMarkdown(path));
+      fBody.value = next.value;
+      if (fBody.setSelectionRange) fBody.setSelectionRange(next.caret, next.caret);
+      scheduleSave();
+      fBody.focus({ preventScroll: true });
+    }
+
+    async function handlePhotoFiles(fileList) {
+      const files = Array.prototype.slice.call(fileList || []).filter(Boolean);
+      if (!files.length) return;
+      if (photoBusy) {
+        if (uploadStatus) {
+          uploadStatus.classList.remove('is-error');
+          uploadStatus.textContent = '지금 사진을 올리고 있습니다. 끝나면 다시 넣어 주세요.';
+        }
+        return;
+      }
+      photoBusy = true;
+      const total = files.length;
+      let done = 0;
+      let failure = '';
+      for (let i = 0; i < total; i++) {
+        if (uploadStatus) {
+          uploadStatus.classList.remove('is-error');
+          uploadStatus.textContent =
+            total > 1 ? `사진 올리는 중... (${i + 1}/${total})` : '사진 올리는 중...';
+        }
+        try {
+          const uploaded = await uploadPhoto(files[i]);
+          const localUrl = URL.createObjectURL(uploaded.optimized.blob);
+          localPhotos.set(uploaded.path, localUrl);
+          addThumb(localUrl, files[i].name);
+          insertPhotoMarkdown(uploaded.path);
+          done++;
+        } catch (err) {
+          failure = photoErrorText(err, files[i]);
+        }
+      }
+      photoBusy = false;
+      if (uploadStatus) {
+        if (failure) {
+          uploadStatus.classList.add('is-error');
+          uploadStatus.textContent =
+            (done ? done + '장은 들어갔습니다. ' : '') +
+            failure +
+            (total > 1 && done ? ' (' + total + '장 중 ' + done + '장 완료)' : '');
+        } else {
+          uploadStatus.classList.remove('is-error');
+          uploadStatus.textContent =
+            (total > 1 ? done + '장' : '사진') +
+            '을 넣었습니다. 설명은 ![ ] 안의 ‘' +
+            DEFAULT_ALT +
+            '’을 고치면 캡션으로 보입니다.';
+        }
+      }
+      refreshPreview();
+      scheduleSave();
+    }
+
+    if (photoPick && photoInput) {
+      photoPick.addEventListener('click', () => {
+        photoInput.value = '';
+        photoInput.click();
+      });
+      photoInput.addEventListener('change', () => {
+        const picked = photoInput.files;
+        photoInput.value = '';
+        handlePhotoFiles(picked);
+      });
+    }
+
+    fBody.addEventListener('paste', (e) => {
+      const data = e.clipboardData;
+      if (!data || !data.items) return;
+      const files = [];
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i];
+        if (item.kind === 'file' && String(item.type || '').indexOf('image/') === 0) {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length) {
+        e.preventDefault();
+        handlePhotoFiles(files);
+      }
+    });
+
+    if (panes) {
+      const hasFiles = (e) => {
+        const types = e.dataTransfer && e.dataTransfer.types;
+        return Boolean(types && Array.prototype.indexOf.call(types, 'Files') >= 0);
+      };
+      let dragDepth = 0;
+      panes.addEventListener('dragenter', (e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth++;
+        panes.classList.add('is-dragover');
+      });
+      panes.addEventListener('dragover', (e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      panes.addEventListener('dragleave', () => {
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (!dragDepth) panes.classList.remove('is-dragover');
+      });
+      panes.addEventListener('drop', (e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth = 0;
+        panes.classList.remove('is-dragover');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          handlePhotoFiles(e.dataTransfer.files);
+        }
+      });
+    }
 
     form.querySelectorAll('.seg button').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1083,14 +1518,22 @@
     const configForm = document.getElementById('adminConfig');
     if (configForm) {
       const codeInput = document.getElementById('adminCode');
+      const disqusInput = document.getElementById('adminDisqus');
       const configMsg = document.getElementById('adminConfigMsg');
       const configBtn = configForm.querySelector('button[type="submit"]');
       configForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const code = codeInput.value.trim().toLowerCase();
+        const shortname = disqusInput ? disqusInput.value.trim().toLowerCase() : (state.config.disqusShortname || '');
         if (code && !CODE_RE.test(code)) {
-          configMsg.textContent = '코드는 영문 소문자·숫자·하이픈 3자 이상이어야 합니다. 예: jeonsul';
+          configMsg.textContent = 'GoatCounter 코드는 영문 소문자·숫자·하이픈 3자 이상이어야 합니다. 예: jeonsul';
           configMsg.classList.add('is-error');
+          return;
+        }
+        if (shortname && !CODE_RE.test(shortname)) {
+          configMsg.textContent = 'Disqus shortname은 영문 소문자·숫자·하이픈 3자 이상이어야 합니다. 예: jeonsul';
+          configMsg.classList.add('is-error');
+          if (disqusInput) disqusInput.focus();
           return;
         }
         configMsg.classList.remove('is-error');
@@ -1098,9 +1541,28 @@
         configBtn.disabled = true;
         configBtn.textContent = '저장 중…';
         try {
-          const text = JSON.stringify({ goatcounterCode: code }, null, 2) + '\n';
-          await putFile('site-config.json', text, state.configSha, code ? `방문자 통계: GoatCounter 코드 ${code}` : '방문자 통계: GoatCounter 해제');
-          state.flash = { type: 'ok', text: code ? `GoatCounter 코드를 "${code}"로 저장했습니다. 사이트 반영까지 30초~1분 걸립니다.` : 'GoatCounter 추적을 껐습니다. 반영까지 30초~1분 걸립니다.' };
+          // 기존 설정 값을 그대로 두고 두 항목만 바꿔 쓴다.
+          const next = Object.assign({}, state.config, {
+            goatcounterCode: code,
+            disqusShortname: shortname,
+          });
+          const text = JSON.stringify(next, null, 2) + '\n';
+          const changed = [];
+          if (code !== (state.config.goatcounterCode || '')) changed.push(code ? `GoatCounter 코드 ${code}` : 'GoatCounter 해제');
+          if (shortname !== (state.config.disqusShortname || '')) changed.push(shortname ? `Disqus ${shortname}` : 'Disqus 댓글 숨김');
+          await putFile(
+            'site-config.json',
+            text,
+            state.configSha,
+            changed.length ? '사이트 설정: ' + changed.join(', ') : '사이트 설정 저장'
+          );
+          state.config = next;
+          state.flash = {
+            type: 'ok',
+            text:
+              (changed.length ? changed.join(' · ') + ' 설정을 저장했습니다.' : '설정을 저장했습니다.') +
+              ' 사이트 반영까지 30초~1분 걸립니다.',
+          };
           await renderDashboard(root, '');
         } catch (err) {
           setApiError(configMsg, err);
@@ -1151,7 +1613,22 @@
       publish: publish,
       removePost: removePost,
       todayISO: todayISO,
+      optimizePhoto: optimizePhoto,
+      uploadPhoto: uploadPhoto,
+      photoMarkdown: photoMarkdown,
+      insertPhotoBlock: insertPhotoBlock,
+      uploadFileName: uploadFileName,
+      uploadDirStamp: uploadDirStamp,
+      safeFileName: safeFileName,
+      base64FromBytes: base64FromBytes,
       RE: { SLUG_RE: SLUG_RE, CODE_RE: CODE_RE },
+      PHOTO: {
+        EDGE: PHOTO_EDGE,
+        QUALITY: PHOTO_QUALITY,
+        MAX_BYTES: PHOTO_MAX_BYTES,
+        ROOT: UPLOAD_ROOT,
+        DEFAULT_ALT: DEFAULT_ALT,
+      },
     },
   };
 })();

@@ -1184,17 +1184,174 @@ main { min-height: 70vh; padding-bottom: 5rem; }
 
 .prose img {
   display: block;
-  border-radius: var(--radius-sm);
-  margin: 2em auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  margin: 1.9em auto;
+  cursor: zoom-in;
 }
 
-.prose figure { margin: 2em 0; }
+/* 사진 한 장이 혼자 선 줄 — 둥근 모서리 + 은은한 테두리 + 캡션 */
+.prose .post-figure {
+  margin: 2.2em 0;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.prose .post-figure img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 16px;
+  display: block;
+  background: var(--surface);
+}
+
+.prose .post-figure img:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+
 .prose figcaption {
   margin-top: 0.6rem;
   font-size: 0.8125rem;
+  line-height: 1.6;
   color: var(--muted);
   text-align: center;
 }
+
+.prose .post-figure figcaption {
+  margin: 0;
+  padding: 0.65rem 0.9rem 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+  text-align: center;
+  border-top: 1px solid var(--line);
+}
+
+/* 라이트박스 — 본문 사진을 화면 가득 크게 본다 */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: clamp(0.9rem, 4vw, 2.5rem);
+  background: rgba(9, 11, 15, 0.94);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  animation: fade 0.18s ease both;
+}
+
+.lightbox[hidden] { display: none; }
+
+.lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  object-fit: contain;
+  cursor: default;
+}
+
+.lightbox-caption {
+  max-width: 40rem;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+  word-break: keep-all;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: calc(0.7rem + env(safe-area-inset-top, 0px));
+  right: calc(0.7rem + env(safe-area-inset-right, 0px));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.lightbox-close:hover { background: rgba(255, 255, 255, 0.24); }
+.lightbox-close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  fill: none;
+}
+.lightbox-close:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+
+body.is-lightbox { overflow: hidden; }
+
+/* 댓글 (Disqus) */
+
+.post-comments {
+  margin-top: 2.6rem;
+  padding: clamp(1.1rem, 3vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.comments-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.comments-head h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.comments-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+#disqus_thread {
+  min-height: 6rem;
+  color: var(--fg-soft);
+  font-size: 0.9375rem;
+}
+#disqus_thread[hidden] { display: none; }
+
+.comments-fallback {
+  margin: 0.2rem 0 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--text2);
+}
+.comments-fallback[hidden] { display: none; }
 
 /* prev / next */
 
@@ -1555,6 +1712,13 @@ main { min-height: 70vh; padding-bottom: 5rem; }
 
 .admin-config { margin-top: 1.3rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }
 .admin-config .field { margin-bottom: 0.6rem; }
+.admin-form-title {
+  margin: 0 0 0.8rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
 
 /* 글 목록 */
 .admin-list { margin: 0; padding: 0; list-style: none; }
@@ -1654,6 +1818,87 @@ main { min-height: 70vh; padding-bottom: 5rem; }
   border-color: var(--blue-border);
   color: var(--blue-text);
   font-weight: 700;
+}
+
+/* 사진 넣기 */
+.upload-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.upload-btn { flex: 0 0 auto; }
+
+.upload-hint { font-size: 0.78rem; color: var(--muted); }
+
+.photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.upload-status {
+  margin: 0;
+  min-height: 1.15em;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.upload-status.is-error { color: var(--danger); }
+
+.upload-strip {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.1rem 0 0.15rem;
+  list-style: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.upload-strip::-webkit-scrollbar { display: none; }
+.upload-strip[hidden] { display: none; }
+
+.upload-thumb {
+  flex: 0 0 auto;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.upload-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.editor-panes.is-dragover {
+  outline: 2px dashed var(--blue);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-tint);
 }
 
 .editor-toolbar {
@@ -1804,6 +2049,13 @@ main { min-height: 70vh; padding-bottom: 5rem; }
   .post-nav.is-empty { display: none; }
 
   .copy-link { margin-left: 0; }
+
+  .prose .post-figure { margin: 1.8em 0; }
+  .prose .post-figure figcaption { padding: 0.55rem 0.75rem 0.65rem; }
+  .lightbox-img { max-height: 74vh; border-radius: 10px; }
+  .upload-thumb { width: 3.2rem; height: 3.2rem; }
+  .post-comments { margin-top: 2.1rem; padding: 1rem 0.95rem; border-radius: var(--radius); }
+  .comments-head { margin-bottom: 0.85rem; }
 
   .featured > a { border-radius: var(--radius); }
   .side-card { border-radius: var(--radius); }
