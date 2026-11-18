@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>mobile preview</title>
+<style>
+  html, body { margin: 0; background: #16232f; }
+  .stage { display: flex; gap: 16px; padding: 16px; }
+  figure { margin: 0; }
+  figcaption { padding: 6px 2px; color: #9fb4cc; font: 11px/1.4 ui-monospace, monospace; letter-spacing: .12em; }
+  iframe { display: block; width: 390px; height: 844px; border: 0; background: #fff; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <figure>
+    <figcaption>IFRAME 390 x 844</figcaption>
+    <iframe id="f" title="preview"></iframe>
+  </figure>
+</div>
+<script>
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var theme = p.get('theme') === 'dark' ? 'dark' : 'light';
+    try { localStorage.setItem('theme', theme); } catch (e) {}
+    var hash = p.get('hash') || '#/';
+    document.getElementById('f').src = './?v=20261118a&s=' + Date.now() + hash;
+  })();
+</script>
+</body>
+</html>

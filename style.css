@@ -1089,7 +1089,8 @@ main {
 .featured-cover {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 7.4;
+  aspect-ratio: 16 / 6.4;
+  max-height: 15rem;
   overflow: hidden;
   background: var(--surface);
   border-bottom: 1px solid var(--line-soft);
@@ -1281,7 +1282,8 @@ main {
 .card-cover {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9.4;
+  aspect-ratio: 16 / 8.4;
+  max-height: 10.5rem;
   overflow: hidden;
   background: var(--surface);
   border-bottom: 1px solid var(--line-soft);
