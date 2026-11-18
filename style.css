@@ -1442,6 +1442,11 @@ main {
   display: none;
 }
 
+/* 검색이 걸리면 최근 글 카드도 함께 감춘다 */
+.featured.is-hidden {
+  display: none;
+}
+
 /* archive / year groups reuse card grid */
 .year-group {
   padding-top: 0.4rem;
