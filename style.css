@@ -373,8 +373,8 @@ main:focus {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 6px 14px -9px rgba(10, 16, 24, 0.65);
 }
 .brand-mark svg {
-  width: 1.62rem;
-  height: 1.62rem;
+  width: 1.75rem;
+  height: 1.75rem;
   display: block;
   overflow: visible;
 }
@@ -3104,8 +3104,8 @@ body.is-lightbox {
     height: 2rem;
   }
   .brand-mark svg {
-    width: 1.48rem;
-    height: 1.48rem;
+    width: 1.58rem;
+    height: 1.58rem;
   }
   .brand-en {
     display: none;

@@ -169,6 +169,16 @@ check("카드 대표 사진 프레임", ".card-cover" in css and "aspect-ratio" 
 check("댓글 지연 로드", "IntersectionObserver" in app_js and "requestComments" in app_js)
 check("카드 content-visibility", "content-visibility: auto" in css)
 check("테마색 갱신", "#0B131F" in app_js and "#EDF5FC" in app_js)
+# 10. 2026-11-18 헤더·404 마크 정렬 — viewBox 원점과 겹친 translate(-7.54 -12.93) 때문에
+#     도형이 좌상단으로 두 번 밀려 잘리던 버그의 회귀 방지
+html_404 = (ROOT / "404.html").read_text(encoding="utf-8")
+MARK_VB = 'viewBox="7.1 12.1 49.7 36.3"'
+check("헤더 마크 이중 이동 0건", "translate(-" not in html, "index.html")
+check("404 마크 이중 이동 0건", "translate(-" not in html_404, "404.html")
+check("헤더 마크 viewBox 정렬", html.count(MARK_VB) == 1)
+check("404 마크 viewBox 정렬", html_404.count(MARK_VB) == 1)
+check("헤더 마크 svg 크기", re.search(r"\.brand-mark svg \{[^}]*width: 1\.75rem;[^}]*height: 1\.75rem;", css) is not None)
+check("404 마크 svg 크기", re.search(r"\.mark svg \{[^}]*width:2\.62rem; height:2\.62rem;", html_404) is not None)
 
 print()
 if failures:
