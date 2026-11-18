@@ -13,10 +13,10 @@
   </defs>
   <rect width="64" height="64" rx="15.0" fill="url(#bg)"/>
     <rect x="0.5" y="0.5" width="63" height="63" rx="14.50" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="1"/>
-  <g transform="translate(0.06 0.40)">
+  <g transform="translate(0.06 0.64)">
     <path d="M23.59 18.88H28.45L24.72 38.28Q23.29 45.95 15.68 45.95Q12.83 45.95 11.21 44.45Q9.59 42.96 9.59 40.33Q9.59 39.11 9.82 37.99L10.30 35.40H15.16L14.64 38.17Q14.52 38.78 14.52 39.40Q14.52 40.26 15.11 40.80Q15.71 41.34 16.65 41.34Q19.25 41.34 19.86 38.28Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.90" stroke-linejoin="round"/>
     <path d="M35.85 36.70 34.23 45.12H29.37L34.39 18.88H39.25L37.05 30.40L48.51 18.88H54.28L42.59 30.36L50.20 45.12H44.40L38.80 33.82Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2.90" stroke-linejoin="round"/>
-    <path d="M 11.07 37.17 L 27.85 31.70 L 32.75 17.41 L 30.45 31.70 L 45.05 29.33 L 30.01 33.86 L 26.78 43.29 L 28.29 33.86 L 11.07 37.17 Z" fill="none" stroke="#121416" stroke-width="0.80" stroke-linejoin="round"/>
-    <path d="M 11.07 37.17 L 27.85 31.70 L 32.75 17.41 L 30.45 31.70 L 45.05 29.33 L 30.01 33.86 L 26.78 43.29 L 28.29 33.86 L 11.07 37.17 Z" fill="url(#sp)"/>
+    <path d="M 11.07 33.30 L 27.85 27.82 L 32.75 13.53 L 30.45 27.82 L 45.05 25.45 L 30.01 29.98 L 26.78 39.41 L 28.29 29.98 L 11.07 33.30 Z" fill="none" stroke="#121416" stroke-width="0.80" stroke-linejoin="round"/>
+    <path d="M 11.07 33.30 L 27.85 27.82 L 32.75 13.53 L 30.45 27.82 L 45.05 25.45 L 30.01 29.98 L 26.78 39.41 L 28.29 29.98 L 11.07 33.30 Z" fill="url(#sp)"/>
   </g>
 </svg>
