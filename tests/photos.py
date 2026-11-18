@@ -244,13 +244,17 @@ if app is not None:
     first_card = js("cardHtml({slug:'c',title:'t',date:'2026-11-17',tags:[],cover:'x.jpg'}, true)")
     check("첫 카드 cover 즉시 로딩", 'loading="eager"' in first_card, first_card[:220])
 
-    # 샬레 상태 바 · 히어로
-    bar = js("heroBarHtml([{slug:'a'},{slug:'b'}])")
-    check("상태 바 글 수", 'data-stat="posts">2' in bar, bar[:240])
-    check("상태 바 사진 수 자리", 'data-stat="photos"' in bar, bar[:240])
-    check("상태 바 브랜드", "S.C.H.A.L.E" in bar and "JEONSUL.LOG" in bar, bar[:240])
-    check("상태 바 ONLINE", "hero-online" in bar, bar[:240])
-    check("헤일로 마크", 'class="hero-halo"' in bar, bar[:240])
+    # 히어로 — 컴팩트 단일 컬럼, 상태 바·그림·버튼 없음
+    shell = js("homeShell([{slug:'a',title:'첫 글',date:'2026-11-18',tags:['life'],summary:'요약'}], null, '')")
+    check("히어로 눈썹", "기록 · 2026 · 전설 아카이브" in shell, shell[:240])
+    check("히어로 제목", "전설 아카이브,<br><em>그 이상을 적습니다</em>." in shell, shell[:260])
+    check("히어로 부제", "음악을 모으는 사람의 기록." in shell, shell[:260])
+    check("히어로 상태 바 없음", "hero-bar" not in shell and "data-stat" not in shell, shell[:240])
+    check("히어로 그림 없음", "hero-art" not in shell and "<svg viewBox=\"0 0 440 300\"" not in shell, shell[:240])
+    check("히어로 버튼 없음", "hero-cta" not in shell and "최근 글 읽기" not in shell and "소개 보기" not in shell, shell[:240])
+    check("히어로 컨테이너 단일", 'class="hero reveal"' in shell and "hero-main" not in shell, shell[:200])
+    check("목록 도구 유지", 'id="searchBox"' in shell and 'class="seg-item"' in shell, shell[:200])
+    check("사이드바 유지", 'class="sidebar"' in shell, shell[:200])
 
     check("댓글 지연 로더", js("typeof requestComments === 'function' && typeof armComments === 'function'"))
     check("댓글 재장전 리셋", js("typeof resetCommentsLoader === 'function'"))
@@ -343,7 +347,7 @@ check("설정 저장 시 두 키 함께", "Object.assign({}, state.config" in ad
 
 versions = set(re.findall(r"\?v=([a-z0-9]+)", html))
 check("캐시 버전 하나로 통일", len(versions) == 1, ",".join(versions))
-check("캐시 버전 갱신", "20261118c" in versions, ",".join(versions))
+check("캐시 버전 갱신", "20261118d" in versions, ",".join(versions))
 
 # ── 5. 대표 사진 · 동시 저장 경합 ──────────────────────────
 check("본문 첫 사진 추출", ajs("window.BlogAdmin._test.firstPhotoInBody('앞\\n\\n![설명](./assets/uploads/2026-11/a.webp)\\n뒤')") == "assets/uploads/2026-11/a.webp", ajs("window.BlogAdmin._test.firstPhotoInBody('![a](./x.jpg)')"))

@@ -8,6 +8,8 @@
   4. 태그 키가 app.js TAGS 및 admin.js 기본값과 일치
   5. 민감어 0건 스캔 (공개 페이지가 될 파일 대상)
   6. app.js 가 예전 globals(renderMarkdown, TAGS)를 그대로 노출하는지(관리자 미리보기 호환)
+  7. 모바일 레이아웃 회귀(검색창 높이·히어로 여백)
+  8. 2026-11-18 디자인 정리 스펙(샬레·히어로 버튼·히어로 그림·평행사변형 0건, 새 히어로 문구)
 """
 
 import json
@@ -113,22 +115,41 @@ block = mobile.group(1) if mobile else ""
 check("모바일 검색창 flex: 0 0 auto", re.search(r"\.search-box \{[^}]*flex: 0 0 auto", block) is not None)
 check("모바일 검색창 폭 100%", re.search(r"\.search-box \{[^}]*width: 100%", block) is not None)
 check("모바일 검색창 max-width 해제", re.search(r"\.search-box \{[^}]*max-width: none", block) is not None)
-check("모바일 히어로 일러스트 높이 제한", ".hero-art" in block and "clamp(7.5rem, 34vw, 12rem)" in block)
+check("모바일 히어로 여백 컴팩트", re.search(r"\.hero \{[^}]*padding: 1rem 0 1\.05rem", block) is not None, block[:120])
+check("모바일 히어로 제목 크기 제한", re.search(r"\.hero h1 \{[^}]*clamp\(1\.5rem, 6\.6vw, 1\.8rem\)", block) is not None)
+check("모바일 히어로 그림 없음", ".hero-art" not in block)
 check("터치 기기 '/' 배지 숨김",
       re.search(r"@media \(max-width: 860px\), \(hover: none\) \{[^}]*\.search-kbd \{ display: none; \}", css) is not None)
 foot = re.search(r"\.site-footer \{([^}]*)\}", css)
 check("푸터 safe-area 여백", bool(foot) and "env(safe-area-inset-bottom" in foot.group(1))
 
-# 8. 블루 아카이브 리뉴얼 — 토스 잔재 0건과 핵심 모티프
-check("토스 블루 잔재 없음", "#3182F6" not in css and "#3182f6" not in (ROOT / "index.html").read_text(encoding="utf-8").lower())
-check("블루 아카이브 시그니처 블루", "#128afa" in css.lower())
-check("샬레 야간 팔레트", "#0b131f" in css.lower() and "#38b6ff" in css.lower())
-check("사선 평행사변형 (skewX)", "skewX(-12deg)" in css and "skewX(-11deg)" in css)
-check("모모톡 핑크 포인트", "#fb7299" in css.lower())
-check("헤일로 엠블럼 파비콘", "ellipse" in (ROOT / "assets" / "favicon.svg").read_text(encoding="utf-8"))
-check("히어로 샬레 상태바", "hero-bar" in app_js and "S.C.H.A.L.E" in app_js)
+# 8. 2026-11-18 디자인 정리 — 샬레·히어로 버튼·히어로 그림·평행사변형 제거
+html_all = html + (ROOT / "404.html").read_text(encoding="utf-8")
+favicon = (ROOT / "assets" / "favicon.svg").read_text(encoding="utf-8")
+app_js = (ROOT / "app.js").read_text(encoding="utf-8")
+pages = app_js + css + html_all + favicon
+
+check("토스 블루 잔재 없음", "#3182F6" not in css and "#3182f6" not in html.lower())
+check("시그니처 블루 유지", "#128afa" in css.lower())
+check("야간 팔레트 유지", "#0b131f" in css.lower() and "#38b6ff" in css.lower())
+check("평행사변형(skewX) 0건", "skewx" not in css.lower() and "skewx" not in html_all.lower(), ", ".join(
+    [n for n, t in (("style.css", css), ("404.html", html_all)) if "skewx" in t.lower()]))
+check("기울임 역보정(skew) 잔재 0건", "skew" not in css.lower() and "skew" not in html_all.lower())
+check("샬레 흔적 0건", not any(w in pages for w in ("S.C.H.A.L.E", "SCHALE", "샬레")))
+check("키보토스 흔적 0건", "키보토스" not in pages)
+check("히어로 상태 바 제거", "hero-bar" not in app_js and "hero-bar" not in css and "data-stat" not in app_js)
+check("히어로 버튼 제거", "최근 글 읽기" not in app_js and "소개 보기" not in app_js and "hero-cta" not in css and "hero-cta" not in app_js)
+check("히어로 그림 제거", "hero-art" not in app_js and "hero-art" not in css and "heroArtSvg" not in app_js)
+check("히어로 헬퍼 정리", "heroBarHtml" not in app_js and "fillHeroStats" not in app_js and "haloMarkSvg" not in app_js)
+check("히어로 새 문구 — 눈썹", "기록 · 2026 · 전설 아카이브" in app_js)
+check("히어로 새 문구 — 제목", "전설 아카이브,<br><em>그 이상을 적습니다</em>." in app_js)
+check("히어로 부제 한 줄", "인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 기록." in app_js)
+check("파비콘 라벨", "전설 아카이브" in favicon)
+check("404 브랜드 라벨", "전설 아카이브" in html_all and "SCHALE" not in html_all)
+check("버튼 둥근 사각형", "--radius-btn: 10px" in css)
+check("알약형 태그 필터", re.search(r"\.seg-item::before \{[^}]*border-radius: 999px", css) is not None)
+check("모서리 잘라내기(clip-path 차단) 0건", "polygon(" not in css and "polygon(" not in html_all)
 check("카드 대표 사진 프레임", ".card-cover" in css and "aspect-ratio" in css)
-check("모모톡 댓글 프레임", "comments-kicker" in css and "MomoTalk" in app_js)
 check("댓글 지연 로드", "IntersectionObserver" in app_js and "requestComments" in app_js)
 check("카드 content-visibility", "content-visibility: auto" in css)
 check("테마색 갱신", "#0B131F" in app_js and "#EDF5FC" in app_js)

@@ -240,76 +240,6 @@ function tagOf(post) {
   return (post.tags || []).find((t) => TAGS[t]) || null;
 }
 
-/* 헤일로 — 브랜드 마크·히어로에 쓰는 기하학 링 (블루 아카이브의 그 링) */
-function haloMarkSvg(cls) {
-  return `<svg class="${cls || 'halo'}" viewBox="0 0 32 32" aria-hidden="true">
-    <ellipse cx="16" cy="10.5" rx="10.6" ry="3.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.45"></ellipse>
-    <ellipse cx="16" cy="7.8" rx="7.2" ry="2.3" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.95"></ellipse>
-    <path d="M10.6 17.6h10.8M16 17.6l-4.4 7M16 17.6l4.4 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
-  </svg>`;
-}
-
-/* 히어로 일러스트 — 샬레 아카이브의 헤일로·크리스탈·모모톡 대화 카드.
-   모바일에서 납작한 띠로 잘려도 그림이 망가지지 않도록, 모든 내용을
-   가운데 띠(세로 84~216) 안에만 둔다. */
-function heroArtSvg() {
-  return `<svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="">
-    <defs>
-      <linearGradient id="ba-g1" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#29B8FA"></stop>
-        <stop offset="1" stop-color="#128AFA"></stop>
-      </linearGradient>
-      <linearGradient id="ba-glass" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#ffffff" stop-opacity="0.97"></stop>
-        <stop offset="1" stop-color="#E6F3FE" stop-opacity="0.88"></stop>
-      </linearGradient>
-      <linearGradient id="ba-ray" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#00AEEF" stop-opacity="0.32"></stop>
-        <stop offset="1" stop-color="#00AEEF" stop-opacity="0"></stop>
-      </linearGradient>
-      <linearGradient id="ba-crystal" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#9CE2FF" stop-opacity="0.95"></stop>
-        <stop offset="1" stop-color="#128AFA" stop-opacity="0.5"></stop>
-      </linearGradient>
-      <linearGradient id="ba-pink" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#FB7299"></stop>
-        <stop offset="1" stop-color="#F2547F"></stop>
-      </linearGradient>
-    </defs>
-
-    <path d="M300 0h140v58z" fill="url(#ba-ray)"></path>
-    <path d="M258 0h62v104z" fill="url(#ba-ray)" opacity="0.7"></path>
-    <path d="M0 300h132v-54z" fill="url(#ba-ray)" opacity="0.45"></path>
-
-    <ellipse cx="112" cy="120" rx="88" ry="28" transform="rotate(-13 112 120)" fill="none" stroke="#00AEEF" stroke-width="13" opacity="0.08"></ellipse>
-    <ellipse cx="112" cy="120" rx="88" ry="28" transform="rotate(-13 112 120)" fill="none" stroke="#00AEEF" stroke-width="2.8" opacity="0.55"></ellipse>
-    <ellipse cx="112" cy="120" rx="66" ry="19" transform="rotate(-13 112 120)" fill="none" stroke="#6FD0FF" stroke-width="1.8" opacity="0.9"></ellipse>
-
-    <path d="M112 146l26 50H86z" fill="url(#ba-crystal)" opacity="0.75"></path>
-    <path d="M112 146l-12 22 12 28 12-28z" fill="#ffffff" opacity="0.55"></path>
-    <path d="M86 196h52l-13 14H99z" fill="url(#ba-g1)" opacity="0.3"></path>
-
-    <rect x="206" y="88" width="190" height="100" rx="12" fill="url(#ba-glass)"></rect>
-    <rect x="206" y="88" width="190" height="100" rx="12" fill="none" stroke="#128AFA" stroke-opacity="0.2" stroke-width="1.4"></rect>
-    <path d="M206 100a12 12 0 0 1 12-12h166a12 12 0 0 1 12 12v8H206z" fill="url(#ba-pink)" opacity="0.95"></path>
-    <circle cx="220" cy="98" r="2.6" fill="#ffffff" opacity="0.95"></circle>
-    <circle cx="231" cy="98" r="2.6" fill="#ffffff" opacity="0.7"></circle>
-    <circle cx="242" cy="98" r="2.6" fill="#ffffff" opacity="0.45"></circle>
-    <rect x="330" y="94" width="54" height="8" rx="4" fill="#ffffff" opacity="0.55"></rect>
-
-    <rect x="220" y="122" width="104" height="15" rx="7.5" fill="#DCEAF8"></rect>
-    <rect x="274" y="144" width="108" height="15" rx="7.5" fill="#FB7299" opacity="0.28"></rect>
-    <rect x="220" y="166" width="74" height="12" rx="6" fill="#128AFA" opacity="0.16"></rect>
-    <path d="M214 188h20l-20 14z" fill="url(#ba-glass)"></path>
-    <path d="M214 188h20l-20 14z" fill="none" stroke="#128AFA" stroke-opacity="0.16" stroke-width="1.2"></path>
-
-    <path d="M398 78l4.2 10.4L412.6 93l-10.4 4.2L398 107.6l-4.2-10.4L383.4 93l10.4-4.6z" fill="#128AFA" opacity="0.5"></path>
-    <path d="M58 196l3 7.4 7.4 3-7.4 3-3 7.4-3-7.4-7.4-3 7.4-3z" fill="#00C4B4" opacity="0.55"></path>
-    <circle cx="418" cy="176" r="4" fill="#00AEEF" opacity="0.4"></circle>
-    <circle cx="44" cy="96" r="3.4" fill="#128AFA" opacity="0.3"></circle>
-  </svg>`;
-}
-
 /* ── views ───────────────────────────────────────────────── */
 
 function coverSrc(post) {
@@ -327,7 +257,7 @@ function cardHtml(post, priority) {
     <a href="#/post/${encodeURIComponent(post.slug)}" data-slug="${escapeHtml(post.slug)}">
       ${
         cover
-          ? `<div class="card-cover"><img src="${cover}" alt=""${eager} decoding="async"><span class="card-cover-tag" aria-hidden="true">PHOTO</span></div>`
+          ? `<div class="card-cover"><img src="${cover}" alt=""${eager} decoding="async"></div>`
           : ''
       }
       <div class="card-body">
@@ -385,38 +315,12 @@ function sidebarHtml(posts) {
   </aside>`;
 }
 
-/* 샬레 아카이브 상태 바 — 글 수·사진 수·온라인 인디케이터 */
-function heroBarHtml(posts) {
-  return `<div class="hero-bar">
-      <p class="hero-tag">
-        ${haloMarkSvg('hero-halo')}
-        <span class="hero-tag-text">S.C.H.A.L.E</span>
-      </p>
-      <p class="hero-file">ARCHIVE <span class="hero-slash" aria-hidden="true">//</span> JEONSUL.LOG</p>
-      <ul class="hero-stats">
-        <li><b data-stat="posts">${posts.length}</b><span>POSTS</span></li>
-        <li><b data-stat="photos">–</b><span>PHOTOS</span></li>
-        <li class="hero-online"><i aria-hidden="true"></i>ONLINE</li>
-      </ul>
-    </div>`;
-}
-
 function homeShell(posts, activeTag, innerHtml) {
   return `
     <section class="hero reveal">
-      ${heroBarHtml(posts)}
-      <div class="hero-main">
-        <div class="hero-copy">
-          <p class="hero-eyebrow"><span class="dot"></span>기록 · 2026 · 키보토스 아카이브</p>
-          <h1>쌓아 두지 않으면<br>사라지는 것들을 <em>적어 둡니다</em>.</h1>
-          <p class="hero-sub">인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 노트. 잘 쓴 글보다 오래 남는 글을 목표로, 느리게 올립니다.</p>
-          <div class="hero-cta">
-            <a class="btn btn-primary btn-lg" href="#/post/${encodeURIComponent(posts[0] ? posts[0].slug : '')}">최근 글 읽기</a>
-            <a class="btn btn-ghost btn-lg" href="#/about">소개 보기</a>
-          </div>
-        </div>
-        <div class="hero-art" aria-hidden="true">${heroArtSvg()}</div>
-      </div>
+      <p class="hero-eyebrow"><span class="dot"></span>기록 · 2026 · 전설 아카이브</p>
+      <h1>전설 아카이브,<br><em>그 이상을 적습니다</em>.</h1>
+      <p class="hero-sub">인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 기록.</p>
     </section>
     <div class="home-grid">
       <div class="home-main">
@@ -771,25 +675,6 @@ function wirePhotoRetry() {
 
 /* ── home enhancements ───────────────────────────────────── */
 
-/* 히어로 상태 바 — 사진 수는 본문에 들어간 사진을 세어 채운다(이미 데워 둔 본문 재사용). */
-function fillHeroStats(posts) {
-  const el = document.querySelector('[data-stat="photos"]');
-  if (!el) return;
-  Promise.all(posts.map((p) => getPost(p.slug).catch(() => '')))
-    .then((bodies) => {
-      let photos = 0;
-      bodies.forEach((md) => {
-        const m = String(md).match(/!\[/g);
-        if (m) photos += m.length;
-      });
-      const target = document.querySelector('[data-stat="photos"]');
-      if (target) target.textContent = photos ? String(photos) : '0';
-    })
-    .catch(() => {
-      if (el) el.textContent = '0';
-    });
-}
-
 function fillReadingTimes() {
   getIndex()
     .then((posts) => {
@@ -1068,7 +953,6 @@ async function render({ keepScroll = false } = {}) {
   if (route.name === 'home') {
     wireSearch();
     rankPopular();
-    fillHeroStats(indexCache || []);
     if (pendingSearchFocus) {
       pendingSearchFocus = false;
       focusSearch();
@@ -1288,7 +1172,6 @@ function mountComments(post) {
     host.setAttribute('aria-label', '댓글');
     host.innerHTML =
       '<div class="comments-head">' +
-      '<p class="comments-kicker"><span class="mt-dot" aria-hidden="true"></span>MomoTalk</p>' +
       '<h2>댓글</h2>' +
       '<p class="comments-note">Disqus 계정으로 남길 수 있습니다.</p>' +
       '</div>' +
