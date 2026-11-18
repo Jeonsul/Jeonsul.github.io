@@ -146,6 +146,22 @@ check("히어로 새 문구 — 제목", "전설 아카이브,<br><em>그 이상
 check("히어로 부제 한 줄", "인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 기록." in app_js)
 check("파비콘 라벨", "전설 아카이브" in favicon)
 check("404 브랜드 라벨", "전설 아카이브" in html_all and "SCHALE" not in html_all)
+# 9. 2026-11-18 JK 아이콘 — 파비콘·홈화면 아이콘·헤더 마크
+assets = ROOT / "assets"
+icon192 = assets / "icon-192.png"
+apple = assets / "apple-touch-icon.png"
+check("파비콘 64 뷰박스", 'viewBox="0 0 64 64"' in favicon)
+check("파비콘 글자 outline", favicon.count('fill="#FFFFFF" stroke="#FFFFFF"') == 2 and '<g transform="translate(' in favicon)
+check("파비콘에 text 태그 없음", "<text" not in favicon)
+check("파비콘 별빛", "#0B84FF" in favicon and "linearGradient" in favicon)
+check("파비콘 딥블랙", "#131416" in favicon or "#15171A" in favicon)
+check("icon-192.png 존재", icon192.is_file() and icon192.stat().st_size > 2000, str(icon192))
+check("apple-touch-icon.png 존재", apple.is_file() and apple.stat().st_size > 2000, str(apple))
+check("index 아이콘 링크 3종", html.count('rel="icon"') == 2 and "apple-touch-icon" in html and "icon-192.png" in html)
+check("헤더 마크 교체", "bm-sp" in html and re.search(r'<svg viewBox="7?\.?\d+ .*?" aria-hidden="true" focusable="false">', html) is not None
+      and html.count('stroke="#FFFFFF"') == 2)
+check("헤더 마크 옛 헤일로 제거", "ellipse" not in html)
+check("404 아이콘 링크", "apple-touch-icon" in html_all and "m-sp" in html_all)
 check("버튼 둥근 사각형", "--radius-btn: 10px" in css)
 check("알약형 태그 필터", re.search(r"\.seg-item::before \{[^}]*border-radius: 999px", css) is not None)
 check("모서리 잘라내기(clip-path 차단) 0건", "polygon(" not in css and "polygon(" not in html_all)

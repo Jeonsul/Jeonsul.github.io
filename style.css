@@ -369,17 +369,18 @@ main:focus {
   border-radius: 10px;
   color: #fff;
   flex: none;
-  background: linear-gradient(148deg, #35b6ff 0%, #128afa 52%, #0b5fb8 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 14px -6px rgba(18, 138, 250, 0.8);
+  background: linear-gradient(160deg, #1c1e22 0%, #131416 62%, #0f1113 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 6px 14px -9px rgba(10, 16, 24, 0.65);
 }
 .brand-mark svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.62rem;
+  height: 1.62rem;
   display: block;
+  overflow: visible;
 }
 [data-theme="dark"] .brand-mark {
-  background: linear-gradient(148deg, #2a6fb5 0%, #12447e 60%, #0c2a4f 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 18px -4px rgba(56, 182, 255, 0.65);
+  background: linear-gradient(160deg, #202226 0%, #131416 60%, #0d0f11 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 16px -6px rgba(56, 182, 255, 0.4);
 }
 
 .brand-text {
@@ -3103,8 +3104,8 @@ body.is-lightbox {
     height: 2rem;
   }
   .brand-mark svg {
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.48rem;
+    height: 1.48rem;
   }
   .brand-en {
     display: none;
