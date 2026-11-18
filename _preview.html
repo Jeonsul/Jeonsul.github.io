@@ -4,19 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>mobile preview</title>
+<title>viewport preview</title>
 <style>
   html, body { margin: 0; background: #16232f; }
   .stage { display: flex; gap: 16px; padding: 16px; }
   figure { margin: 0; }
   figcaption { padding: 6px 2px; color: #9fb4cc; font: 11px/1.4 ui-monospace, monospace; letter-spacing: .12em; }
-  iframe { display: block; width: 390px; height: 844px; border: 0; background: #fff; }
+  iframe { display: block; border: 0; background: #fff; }
 </style>
 </head>
 <body>
 <div class="stage">
   <figure>
-    <figcaption>IFRAME 390 x 844</figcaption>
+    <figcaption id="cap">IFRAME</figcaption>
     <iframe id="f" title="preview"></iframe>
   </figure>
 </div>
@@ -24,9 +24,28 @@
   (function () {
     var p = new URLSearchParams(location.search);
     var theme = p.get('theme') === 'dark' ? 'dark' : 'light';
-    try { localStorage.setItem('theme', theme); } catch (e) {}
+    var w = parseInt(p.get('w') || '390', 10);
+    var h = parseInt(p.get('h') || '844', 10);
     var hash = p.get('hash') || '#/';
-    document.getElementById('f').src = './?v=20261118b&s=' + Date.now() + hash;
+    var scroll = p.get('scroll') || '';
+    try { localStorage.setItem('theme', theme); } catch (e) {}
+    var f = document.getElementById('f');
+    f.width = w;
+    f.height = h;
+    f.style.width = w + 'px';
+    f.style.height = h + 'px';
+    document.getElementById('cap').textContent = 'IFRAME ' + w + ' x ' + h + ' · ' + theme;
+    f.addEventListener('load', function () {
+      if (!scroll) return;
+      var d = f.contentDocument;
+      if (!d) return;
+      setTimeout(function () {
+        d.documentElement.style.scrollBehavior = 'auto';
+        var el = d.querySelector(scroll);
+        if (el) f.contentWindow.scrollTo(0, el.getBoundingClientRect().top + f.contentWindow.scrollY - 64);
+      }, 700);
+    });
+    f.src = './?v=20261118b&s=' + Date.now() + hash;
   })();
 </script>
 </body>
