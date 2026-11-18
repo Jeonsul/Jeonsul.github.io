@@ -57,6 +57,13 @@ for p in posts:
     check(f"글 본문 존재: {p['slug']}", f.exists())
     for key in ("slug", "title", "date", "tags"):
         check(f"필수 키 {key}: {p['slug']}", key in p)
+    if p.get("cover"):
+        cover_rel = str(p["cover"]).lstrip("./")
+        check(f"cover 파일 존재: {p['slug']}", (ROOT / cover_rel).exists(), str(p["cover"]))
+
+# 고아 항목(본문 없는 카드) 0건 — 목록에만 남아 404로 가는 카드
+for slug in slugs:
+    check(f"목록↔본문 짝: {slug}", (ROOT / "posts" / f"{slug}.md").exists())
 
 # 3. index.html 참조
 html = (ROOT / "index.html").read_text(encoding="utf-8")
@@ -111,6 +118,20 @@ check("터치 기기 '/' 배지 숨김",
       re.search(r"@media \(max-width: 860px\), \(hover: none\) \{[^}]*\.search-kbd \{ display: none; \}", css) is not None)
 foot = re.search(r"\.site-footer \{([^}]*)\}", css)
 check("푸터 safe-area 여백", bool(foot) and "env(safe-area-inset-bottom" in foot.group(1))
+
+# 8. 블루 아카이브 리뉴얼 — 토스 잔재 0건과 핵심 모티프
+check("토스 블루 잔재 없음", "#3182F6" not in css and "#3182f6" not in (ROOT / "index.html").read_text(encoding="utf-8").lower())
+check("블루 아카이브 시그니처 블루", "#128afa" in css.lower())
+check("샬레 야간 팔레트", "#0b131f" in css.lower() and "#38b6ff" in css.lower())
+check("사선 평행사변형 (skewX)", "skewX(-12deg)" in css and "skewX(-11deg)" in css)
+check("모모톡 핑크 포인트", "#fb7299" in css.lower())
+check("헤일로 엠블럼 파비콘", "ellipse" in (ROOT / "assets" / "favicon.svg").read_text(encoding="utf-8"))
+check("히어로 샬레 상태바", "hero-bar" in app_js and "S.C.H.A.L.E" in app_js)
+check("카드 대표 사진 프레임", ".card-cover" in css and "aspect-ratio" in css)
+check("모모톡 댓글 프레임", "comments-kicker" in css and "MomoTalk" in app_js)
+check("댓글 지연 로드", "IntersectionObserver" in app_js and "requestComments" in app_js)
+check("카드 content-visibility", "content-visibility: auto" in css)
+check("테마색 갱신", "#0B131F" in app_js and "#EDF5FC" in app_js)
 
 print()
 if failures:

@@ -1,5 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="전국">
-  <rect width="64" height="64" rx="18" fill="#3182F6"/>
-  <circle cx="23" cy="32" r="11" fill="#ffffff"/>
-  <path d="M39 21.5h15M39 32h15M39 42.5h10" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="전국 · 샬레 아카이브">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16365C"></stop>
+      <stop offset="0.55" stop-color="#0E2140"></stop>
+      <stop offset="1" stop-color="#0B131F"></stop>
+    </linearGradient>
+    <linearGradient id="halo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#29B8FA"></stop>
+      <stop offset="1" stop-color="#6FD0FF"></stop>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"></rect>
+  <path d="M0 44l64-18v38H0z" fill="#128AFA" opacity="0.16"></path>
+  <path d="M0 64l20-14h44v14z" fill="#00AEEF" opacity="0.14"></path>
+  <ellipse cx="32" cy="20.5" rx="19.5" ry="6.2" fill="none" stroke="url(#halo)" stroke-width="2.4" opacity="0.55"></ellipse>
+  <ellipse cx="32" cy="14.5" rx="11.5" ry="3.6" fill="none" stroke="#B7ECFF" stroke-width="2" opacity="0.95"></ellipse>
+  <path d="M20.5 32.5h23M43.5 32.5L32.5 47M20.5 47l11-14.5" fill="none" stroke="#F2FAFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
 </svg>

@@ -214,21 +214,21 @@ function warmPosts(posts) {
 /* ── thumbnails & illustration (inline SVG, 외부 의존성 0) ── */
 
 function thumbSvg(kind) {
-  const stroke = 'stroke="#3182F6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
-  const fill = 'fill="#E8F3FF"';
+  const stroke =
+    'class="st" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
   if (kind === 'music') {
-    return `<svg viewBox="0 0 32 32" aria-hidden="true"><path class="st" d="M12.5 23.5V9.2l10-2v13.6" fill="none" ${stroke}/><circle class="st" cx="10" cy="23.5" r="2.7" fill="none" ${stroke}/><circle class="st" cx="20" cy="20.8" r="2.7" fill="none" ${stroke}/></svg>`;
+    return `<svg viewBox="0 0 32 32" aria-hidden="true"><path ${stroke} d="M12.5 23.5V9.2l10-2v13.6"/><circle ${stroke} cx="10" cy="23.5" r="2.7"/><circle ${stroke} cx="20" cy="20.8" r="2.7"/></svg>`;
   }
   if (kind === 'photo') {
-    return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect class="st" x="4" y="9" width="24" height="17" rx="3.5" fill="none" ${stroke}/><path class="st" d="M11.5 9l1.8-3h5.4l1.8 3" fill="none" ${stroke}/><circle class="st" cx="16" cy="17.5" r="4.6" fill="none" ${stroke}/></svg>`;
+    return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect ${stroke} x="4" y="9" width="24" height="17" rx="3.5"/><path ${stroke} d="M11.5 9l1.8-3h5.4l1.8 3"/><circle ${stroke} cx="16" cy="17.5" r="4.6"/></svg>`;
   }
   if (kind === 'ai') {
-    return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect class="st" x="9" y="9" width="14" height="14" rx="3" fill="none" ${stroke}/><path class="st" d="M16 3.5V9M16 23v5.5M3.5 16H9M23 16h5.5" fill="none" ${stroke}/><circle class="st" cx="16" cy="16" r="2.6" fill="none" ${stroke}/></svg>`;
+    return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect ${stroke} x="9" y="9" width="14" height="14" rx="3"/><path ${stroke} d="M16 3.5V9M16 23v5.5M3.5 16H9M23 16h5.5"/><circle ${stroke} cx="16" cy="16" r="2.6"/></svg>`;
   }
   if (kind === 'life') {
-    return `<svg viewBox="0 0 32 32" aria-hidden="true"><path class="st" d="M6 22c0-6 4.5-13 10-13s10 7 10 13" fill="none" ${stroke}/><path class="st" d="M6 22h20" fill="none" ${stroke}/><circle class="st" cx="16" cy="26" r="1.6" ${stroke}/></svg>`;
+    return `<svg viewBox="0 0 32 32" aria-hidden="true"><path ${stroke} d="M6 22c0-6 4.5-13 10-13s10 7 10 13"/><path ${stroke} d="M6 22h20"/><circle ${stroke} cx="16" cy="26" r="1.6"/></svg>`;
   }
-  return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect class="st" x="7" y="5" width="18" height="22" rx="3.5" fill="none" ${stroke}/><path class="st" d="M11.5 11h9M11.5 16h9M11.5 21h5.5" fill="none" ${stroke}/></svg>`;
+  return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect ${stroke} x="7" y="5" width="18" height="22" rx="3.5"/><path ${stroke} d="M11.5 11h9M11.5 16h9M11.5 21h5.5"/></svg>`;
 }
 
 function tagThumb(tags) {
@@ -240,53 +240,109 @@ function tagOf(post) {
   return (post.tags || []).find((t) => TAGS[t]) || null;
 }
 
-/* 히어로 일러스트 — 가운데 띠(세로 100~220) 안에만 내용을 두어,
-   모바일에서 위아래를 잘라 납작하게 보여 줘도 그림이 잘리지 않는다. */
+/* 헤일로 — 브랜드 마크·히어로에 쓰는 기하학 링 (블루 아카이브의 그 링) */
+function haloMarkSvg(cls) {
+  return `<svg class="${cls || 'halo'}" viewBox="0 0 32 32" aria-hidden="true">
+    <ellipse cx="16" cy="10.5" rx="10.6" ry="3.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.45"></ellipse>
+    <ellipse cx="16" cy="7.8" rx="7.2" ry="2.3" fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.95"></ellipse>
+    <path d="M10.6 17.6h10.8M16 17.6l-4.4 7M16 17.6l4.4 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>`;
+}
+
+/* 히어로 일러스트 — 샬레 아카이브의 헤일로·광선·크리스탈·모모톡 말풍선.
+   가운데 띠(세로 60~250) 안에 내용을 몰아 두어, 모바일에서 납작하게 잘라도
+   그림이 망가지지 않는다. */
 function heroArtSvg() {
-  return `<svg viewBox="0 0 420 320" role="img" aria-label="">
+  return `<svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="">
     <defs>
-      <linearGradient id="ga" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#3182F6" stop-opacity="0.92"/>
-        <stop offset="1" stop-color="#1B64DA" stop-opacity="0.92"/>
+      <linearGradient id="ba-g1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#29B8FA"></stop>
+        <stop offset="1" stop-color="#128AFA"></stop>
       </linearGradient>
-      <linearGradient id="gb" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
-        <stop offset="1" stop-color="#E8F3FF" stop-opacity="0.9"/>
+      <linearGradient id="ba-glass" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.97"></stop>
+        <stop offset="1" stop-color="#E6F3FE" stop-opacity="0.88"></stop>
+      </linearGradient>
+      <linearGradient id="ba-ray" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#00AEEF" stop-opacity="0.32"></stop>
+        <stop offset="1" stop-color="#00AEEF" stop-opacity="0"></stop>
+      </linearGradient>
+      <linearGradient id="ba-crystal" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#9CE2FF" stop-opacity="0.95"></stop>
+        <stop offset="1" stop-color="#128AFA" stop-opacity="0.5"></stop>
       </linearGradient>
     </defs>
-    <ellipse cx="214" cy="160" rx="196" ry="122" fill="#3182F6" opacity="0.045"/>
-    <circle cx="92" cy="160" r="56" fill="url(#ga)"/>
-    <circle cx="92" cy="160" r="56" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
-    <path d="M66 172c8-11 16-16 26-16" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" fill="none" opacity="0.85"/>
-    <rect x="172" y="104" width="196" height="112" rx="24" fill="url(#gb)"/>
-    <rect x="172" y="104" width="196" height="112" rx="24" fill="none" stroke="#3182F6" stroke-opacity="0.22" stroke-width="2"/>
-    <rect x="196" y="130" width="104" height="12" rx="6" fill="#3182F6" opacity="0.78"/>
-    <rect x="196" y="154" width="140" height="12" rx="6" fill="#3182F6" opacity="0.34"/>
-    <rect x="196" y="178" width="76" height="12" rx="6" fill="#3182F6" opacity="0.2"/>
-    <path d="M356 118l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#3182F6" opacity="0.75"/>
-    <circle cx="392" cy="128" r="4.5" fill="#3182F6" opacity="0.35"/>
-    <circle cx="378" cy="204" r="8" fill="#3182F6" opacity="0.28"/>
-    <circle cx="48" cy="222" r="6" fill="#3182F6" opacity="0.25"/>
+
+    <path d="M300 0h140v58z" fill="url(#ba-ray)"></path>
+    <path d="M258 0h62v104z" fill="url(#ba-ray)" opacity="0.7"></path>
+    <path d="M0 300h132v-54z" fill="url(#ba-ray)" opacity="0.45"></path>
+
+    <ellipse cx="118" cy="116" rx="94" ry="34" transform="rotate(-13 118 116)" fill="none" stroke="#00AEEF" stroke-width="10" opacity="0.09"></ellipse>
+    <ellipse cx="118" cy="116" rx="94" ry="34" transform="rotate(-13 118 116)" fill="none" stroke="#00AEEF" stroke-width="3.2" opacity="0.5"></ellipse>
+    <ellipse cx="118" cy="116" rx="74" ry="26" transform="rotate(-13 118 116)" fill="none" stroke="#6FD0FF" stroke-width="1.8" opacity="0.85"></ellipse>
+    <ellipse cx="118" cy="116" rx="74" ry="26" transform="rotate(-13 118 116)" fill="url(#ba-g1)" opacity="0.1"></ellipse>
+
+    <path d="M118 152l31 52h-62z" fill="url(#ba-crystal)" opacity="0.72"></path>
+    <path d="M118 152l-14 24 14 28 14-28z" fill="#ffffff" opacity="0.55"></path>
+    <path d="M87 204h62l-15 18h-32z" fill="url(#ba-g1)" opacity="0.32"></path>
+
+    <rect x="198" y="76" width="182" height="112" rx="14" fill="url(#ba-glass)"></rect>
+    <rect x="198" y="76" width="182" height="112" rx="14" fill="none" stroke="#128AFA" stroke-opacity="0.22" stroke-width="1.5"></rect>
+    <path d="M198 92a16 16 0 0 1 16-16h150a16 16 0 0 1 16 16v8H198z" fill="url(#ba-g1)" opacity="0.92"></path>
+    <circle cx="211" cy="86" r="2.8" fill="#ffffff" opacity="0.95"></circle>
+    <circle cx="222" cy="86" r="2.8" fill="#FB7299"></circle>
+    <circle cx="233" cy="86" r="2.8" fill="#00C4B4"></circle>
+    <rect x="214" y="112" width="96" height="9" rx="4.5" fill="#128AFA" opacity="0.72"></rect>
+    <rect x="214" y="132" width="140" height="8" rx="4" fill="#5D7087" opacity="0.28"></rect>
+    <rect x="214" y="150" width="76" height="8" rx="4" fill="#128AFA" opacity="0.22"></rect>
+    <rect x="214" y="168" width="46" height="8" rx="4" fill="#FB7299" opacity="0.5"></rect>
+
+    <path d="M252 212h104a12 12 0 0 1 12 12v16a12 12 0 0 1-12 12h-56l-16 13v-13h-32a12 12 0 0 1-12-12v-16a12 12 0 0 1 12-12z" fill="#ffffff" opacity="0.92"></path>
+    <path d="M252 212h104a12 12 0 0 1 12 12v16a12 12 0 0 1-12 12h-56l-16 13v-13h-32a12 12 0 0 1-12-12v-16a12 12 0 0 1 12-12z" fill="none" stroke="#FB7299" stroke-opacity="0.4" stroke-width="1.4"></path>
+    <circle cx="272" cy="234" r="3.8" fill="#FB7299" opacity="0.85"></circle>
+    <circle cx="290" cy="234" r="3.8" fill="#FB7299" opacity="0.5"></circle>
+    <circle cx="308" cy="234" r="3.8" fill="#FB7299" opacity="0.28"></circle>
+
+    <path d="M372 40l4.6 11.4L388 56l-11.4 4.6L372 72l-4.6-11.4L356 56l11.4-4.6z" fill="#128AFA" opacity="0.5"></path>
+    <path d="M64 236l3 7.4L74.4 246l-7.4 3L64 256l-3-7-7.4-3 7.4-2.6z" fill="#00C4B4" opacity="0.55"></path>
+    <circle cx="404" cy="164" r="4.6" fill="#00AEEF" opacity="0.4"></circle>
+    <circle cx="46" cy="196" r="3.6" fill="#128AFA" opacity="0.32"></circle>
   </svg>`;
 }
 
 /* ── views ───────────────────────────────────────────────── */
 
-function cardHtml(post) {
+function coverSrc(post) {
+  const cover = typeof post.cover === 'string' ? post.cover.trim() : '';
+  if (!cover) return '';
+  return escapeHtml(cover);
+}
+
+/* 카드 썸네일 — cover가 있으면 사진 프레임, 없으면 헤일로 도형 타일 */
+function cardHtml(post, priority) {
   const t = tagOf(post);
-  return `<li class="card reveal${t ? '' : ' is-uncategorized'}" data-slug="${escapeHtml(post.slug)}">
+  const cover = coverSrc(post);
+  const eager = priority ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"';
+  return `<li class="card reveal${t ? '' : ' is-uncategorized'}${cover ? ' has-cover' : ''}" data-slug="${escapeHtml(post.slug)}">
     <a href="#/post/${encodeURIComponent(post.slug)}" data-slug="${escapeHtml(post.slug)}">
-      <div class="card-top">
-        <span class="card-cat">${t ? TAGS[t] : '기록'}</span>
-        <span class="card-thumb" aria-hidden="true">${tagThumb(post.tags)}</span>
+      ${
+        cover
+          ? `<div class="card-cover"><img src="${cover}" alt=""${eager} decoding="async"><span class="card-cover-tag" aria-hidden="true">PHOTO</span></div>`
+          : ''
+      }
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-cat">${t ? TAGS[t] : '기록'}</span>
+          ${cover ? '' : `<span class="card-thumb" aria-hidden="true">${tagThumb(post.tags)}</span>`}
+        </div>
+        <h3>${escapeHtml(post.title)}</h3>
+        <p class="summary">${escapeHtml(post.summary || '')}</p>
+        <span class="card-meta">
+          <time datetime="${post.date}">${formatDate(post.date)}</time>
+          <span class="sep">·</span>
+          <span class="rt" data-rt="${escapeHtml(post.slug)}">읽는 중…</span>
+        </span>
       </div>
-      <h3>${escapeHtml(post.title)}</h3>
-      <p class="summary">${escapeHtml(post.summary || '')}</p>
-      <span class="card-meta">
-        <time datetime="${post.date}">${formatDate(post.date)}</time>
-        <span class="sep">·</span>
-        <span class="rt" data-rt="${escapeHtml(post.slug)}">읽는 중…</span>
-      </span>
     </a>
   </li>`;
 }
@@ -297,7 +353,7 @@ function sidebarHtml(posts) {
     .map(
       (p, i) => `<li>
         <a href="#/post/${encodeURIComponent(p.slug)}" data-slug="${escapeHtml(p.slug)}">
-          <span class="pop-rank">${i + 1}</span>
+          <span class="pop-rank">0${i + 1}</span>
           <span class="pop-title">${escapeHtml(p.title)}</span>
         </a>
         <span class="pop-meta" data-pop="${escapeHtml(p.slug)}">조회수 집계 중…</span>
@@ -329,19 +385,38 @@ function sidebarHtml(posts) {
   </aside>`;
 }
 
+/* 샬레 아카이브 상태 바 — 글 수·사진 수·온라인 인디케이터 */
+function heroBarHtml(posts) {
+  return `<div class="hero-bar">
+      <p class="hero-tag">
+        ${haloMarkSvg('hero-halo')}
+        <span class="hero-tag-text">S.C.H.A.L.E</span>
+      </p>
+      <p class="hero-file">ARCHIVE <span class="hero-slash" aria-hidden="true">//</span> JEONSUL.LOG</p>
+      <ul class="hero-stats">
+        <li><b data-stat="posts">${posts.length}</b><span>POSTS</span></li>
+        <li><b data-stat="photos">–</b><span>PHOTOS</span></li>
+        <li class="hero-online"><i aria-hidden="true"></i>ONLINE</li>
+      </ul>
+    </div>`;
+}
+
 function homeShell(posts, activeTag, innerHtml) {
   return `
     <section class="hero reveal">
-      <div class="hero-copy">
-        <p class="hero-eyebrow"><span class="dot"></span>기록 · 2026</p>
-        <h1>쌓아 두지 않으면<br>사라지는 것들을 <em>적어 둡니다</em>.</h1>
-        <p class="hero-sub">인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 노트. 잘 쓴 글보다 오래 남는 글을 목표로, 느리게 올립니다.</p>
-        <div class="hero-cta">
-          <a class="btn btn-primary btn-lg" href="#/post/${encodeURIComponent(posts[0] ? posts[0].slug : '')}">최근 글 읽기</a>
-          <a class="btn btn-ghost btn-lg" href="#/about">소개 보기</a>
+      ${heroBarHtml(posts)}
+      <div class="hero-main">
+        <div class="hero-copy">
+          <p class="hero-eyebrow"><span class="dot"></span>기록 · 2026 · 키보토스 아카이브</p>
+          <h1>쌓아 두지 않으면<br>사라지는 것들을 <em>적어 둡니다</em>.</h1>
+          <p class="hero-sub">인공지능을 공부하고, 사진을 찍고, 음악을 모으는 사람의 노트. 잘 쓴 글보다 오래 남는 글을 목표로, 느리게 올립니다.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href="#/post/${encodeURIComponent(posts[0] ? posts[0].slug : '')}">최근 글 읽기</a>
+            <a class="btn btn-ghost btn-lg" href="#/about">소개 보기</a>
+          </div>
         </div>
+        <div class="hero-art" aria-hidden="true">${heroArtSvg()}</div>
       </div>
-      <div class="hero-art" aria-hidden="true">${heroArtSvg()}</div>
     </section>
     <div class="home-grid">
       <div class="home-main">
@@ -386,25 +461,29 @@ function viewHome(posts, activeTag) {
 
   const featured = filtered[0];
   const rest = filtered.slice(1);
+  const fCover = coverSrc(featured);
 
   const feature = `
-    <section class="featured reveal">
+    <section class="featured reveal${fCover ? ' has-cover' : ''}" data-slug="${escapeHtml(featured.slug)}">
       <a href="#/post/${encodeURIComponent(featured.slug)}" data-slug="${escapeHtml(featured.slug)}">
-        <span class="kicker">최근 글</span>
-        <h2>${escapeHtml(featured.title)}</h2>
-        <p>${escapeHtml(featured.summary || '')}</p>
-        <span class="meta">
-          <span>${formatDate(featured.date, true)}</span>
-          <span class="sep">·</span>
-          <span class="rt" data-rt="${escapeHtml(featured.slug)}">읽는 중…</span>
-          ${(featured.tags || []).length ? `<span class="sep">·</span><span>${featured.tags.map((t) => TAGS[t] || t).join(', ')}</span>` : ''}
-        </span>
+        ${fCover ? `<div class="featured-cover"><img src="${fCover}" alt="" loading="eager" fetchpriority="high" decoding="async"></div>` : ''}
+        <div class="featured-body">
+          <span class="kicker">최근 기록</span>
+          <h2>${escapeHtml(featured.title)}</h2>
+          <p>${escapeHtml(featured.summary || '')}</p>
+          <span class="meta">
+            <span>${formatDate(featured.date, true)}</span>
+            <span class="sep">·</span>
+            <span class="rt" data-rt="${escapeHtml(featured.slug)}">읽는 중…</span>
+            ${(featured.tags || []).length ? `<span class="sep">·</span><span>${featured.tags.map((t) => TAGS[t] || t).join(', ')}</span>` : ''}
+          </span>
+        </div>
       </a>
     </section>`;
 
   const list = rest.length
     ? `<section class="section-head"><h2>${activeTag ? TAGS[activeTag] : '모든 글'}</h2><a href="#/archive">전체 보기 →</a></section>
-       <ul class="card-grid" id="postList">${rest.map(cardHtml).join('')}</ul>
+       <ul class="card-grid" id="postList">${rest.map((p, i) => cardHtml(p, i === 0)).join('')}</ul>
        <p class="empty no-result" id="noResult">검색 결과가 없습니다.</p>`
     : `<p class="empty no-result" id="noResult">검색 결과가 없습니다.</p>`;
 
@@ -423,14 +502,15 @@ function viewArchive(posts) {
     .map(
       ([year, items]) => `
       <section class="year-group reveal">
-        <h2>${year}</h2>
-        <ul class="card-grid">${items.map(cardHtml).join('')}</ul>
+        <h2><span>${year}</span><em>${items.length}편</em></h2>
+        <ul class="card-grid">${items.map((p, i) => cardHtml(p, i === 0)).join('')}</ul>
       </section>`
     )
     .join('');
 
   return `
     <header class="page-head fade-in">
+      <p class="page-eyebrow"><span class="dot"></span>ARCHIVE</p>
       <h1>기록</h1>
       <p>지금까지 올린 글 ${posts.length}편. 날짜 순으로 정리했습니다.</p>
     </header>
@@ -440,6 +520,7 @@ function viewArchive(posts) {
 function viewAbout() {
   return `
     <header class="page-head fade-in">
+      <p class="page-eyebrow"><span class="dot"></span>PROFILE</p>
       <h1>소개</h1>
       <p>짧게 쓴 자기소개. 길게 쓰면 어색해져서 여기까지만.</p>
     </header>
@@ -690,6 +771,25 @@ function wirePhotoRetry() {
 
 /* ── home enhancements ───────────────────────────────────── */
 
+/* 히어로 상태 바 — 사진 수는 본문에 들어간 사진을 세어 채운다(이미 데워 둔 본문 재사용). */
+function fillHeroStats(posts) {
+  const el = document.querySelector('[data-stat="photos"]');
+  if (!el) return;
+  Promise.all(posts.map((p) => getPost(p.slug).catch(() => '')))
+    .then((bodies) => {
+      let photos = 0;
+      bodies.forEach((md) => {
+        const m = String(md).match(/!\[/g);
+        if (m) photos += m.length;
+      });
+      const target = document.querySelector('[data-stat="photos"]');
+      if (target) target.textContent = photos ? String(photos) : '0';
+    })
+    .catch(() => {
+      if (el) el.textContent = '0';
+    });
+}
+
 function fillReadingTimes() {
   getIndex()
     .then((posts) => {
@@ -830,11 +930,20 @@ if (searchBtn) {
   });
 }
 
-/* 본문 프리페치: 카드 hover/포커스만으로 미리 읽기 */
+/* 본문 프리페치: 카드 hover/포커스/터치만으로 미리 읽기 */
 document.addEventListener('mouseover', (e) => {
   const a = e.target.closest && e.target.closest('a[href^="#/post/"]');
   if (a && a.dataset.slug) prefetchPost(a.dataset.slug);
 }, { passive: true });
+
+document.addEventListener(
+  'touchstart',
+  (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="#/post/"]');
+    if (a && a.dataset.slug) prefetchPost(a.dataset.slug);
+  },
+  { passive: true }
+);
 document.addEventListener('focusin', (e) => {
   const a = e.target.closest && e.target.closest('a[href^="#/post/"]');
   if (a && a.dataset.slug) prefetchPost(a.dataset.slug);
@@ -894,6 +1003,7 @@ function setActiveNav(route) {
 async function render({ keepScroll = false } = {}) {
   const route = parseRoute();
   setActiveNav(route);
+  if (route.name !== 'post') resetCommentsLoader();
 
   if (route.name === 'admin' && window.BlogAdmin) {
     document.body.classList.remove('is-post');
@@ -958,6 +1068,7 @@ async function render({ keepScroll = false } = {}) {
   if (route.name === 'home') {
     wireSearch();
     rankPopular();
+    fillHeroStats(indexCache || []);
     if (pendingSearchFocus) {
       pendingSearchFocus = false;
       focusSearch();
@@ -994,7 +1105,7 @@ function applyTheme(theme) {
   const dark = theme === 'dark';
   $toggle.setAttribute('aria-label', dark ? '라이트 모드로 전환' : '다크 모드로 전환');
   const metas = document.querySelectorAll('meta[name="theme-color"]');
-  const color = dark ? '#101013' : '#ffffff';
+  const color = dark ? '#0B131F' : '#EDF5FC';
   metas.forEach((m) => m.setAttribute('content', color));
   refreshComments();
 }
@@ -1069,14 +1180,16 @@ function disqusConfig(post) {
   };
 }
 
-const disqus = { loading: false, failed: false, timer: null };
+const disqus = { loading: false, failed: false, timer: null, armed: false, requested: false, post: null, shortname: '' };
 
 function commentsFallback(message) {
   const host = document.getElementById('postComments');
   if (!host) return;
   const note = host.querySelector('.comments-fallback');
   const thread = host.querySelector('#disqus_thread');
+  const lazy = host.querySelector('.comments-lazy');
   if (thread) thread.hidden = true;
+  if (lazy) lazy.hidden = true;
   if (note) {
     note.textContent = message;
     note.hidden = false;
@@ -1111,6 +1224,56 @@ function injectDisqus(shortname) {
   }, 12000);
 }
 
+/* 댓글은 글을 열자마자 받지 않는다 — 화면 가까이 오거나 '댓글 불러오기'를 누를 때
+   한 번만 붙인다. 무거운 Disqus 스크립트가 첫 화면을 막지 않게 하려는 것. */
+function requestComments() {
+  const host = document.getElementById('postComments');
+  if (!host || disqus.requested) return;
+  const shortname = disqus.shortname || disqusShortname();
+  if (!shortname) return;
+  const post = disqus.post || { slug: 'index', title: '전국 · 기록' };
+  disqus.requested = true;
+  const lazy = host.querySelector('.comments-lazy');
+  if (lazy) {
+    lazy.hidden = true;
+  }
+  const status = host.querySelector('.comments-wait');
+  if (status) {
+    status.hidden = false;
+    status.textContent = '댓글을 불러오는 중…';
+  }
+  window.disqus_config = disqusConfig(post);
+  if (disqus.failed) {
+    commentsFallback('댓글을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.');
+    return;
+  }
+  if (!window.DISQUS && !disqus.loading) injectDisqus(shortname);
+}
+
+function armComments(host) {
+  if (!host || disqus.armed) return;
+  const btn = host.querySelector('#commentsLoad');
+  if (btn) btn.addEventListener('click', requestComments);
+
+  if (typeof IntersectionObserver !== 'function') {
+    requestComments(); // 관측자를 못 쓰는 브라우저는 그냥 바로
+    return;
+  }
+  disqus.armed = true;
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          io.disconnect();
+          requestComments();
+        }
+      });
+    },
+    { rootMargin: '400px 0px' }
+  );
+  io.observe(host);
+}
+
 function mountComments(post) {
   const shortname = disqusShortname();
   if (!post || !shortname) return;
@@ -1124,8 +1287,15 @@ function mountComments(post) {
     host.id = 'postComments';
     host.setAttribute('aria-label', '댓글');
     host.innerHTML =
-      '<div class="comments-head"><h2>댓글</h2>' +
-      '<p class="comments-note">Disqus 계정으로 남길 수 있습니다.</p></div>' +
+      '<div class="comments-head">' +
+      '<p class="comments-kicker"><span class="mt-dot" aria-hidden="true"></span>MomoTalk</p>' +
+      '<h2>댓글</h2>' +
+      '<p class="comments-note">Disqus 계정으로 남길 수 있습니다.</p>' +
+      '</div>' +
+      '<div class="comments-lazy">' +
+      '<button class="btn btn-sm" type="button" id="commentsLoad">댓글 불러오기</button>' +
+      '<span class="comments-wait" hidden></span>' +
+      '</div>' +
       '<div id="disqus_thread"></div>' +
       '<p class="comments-fallback" hidden></p>';
     const footer = article.querySelector('.post-footer');
@@ -1134,23 +1304,29 @@ function mountComments(post) {
   }
   host.dataset.theme = document.documentElement.dataset.theme || 'light';
 
-  if (!window.DISQUS) {
-    window.disqus_config = disqusConfig(post);
-    if (disqus.loading) return; // 스크립트가 오는 중 — 그때의 설정을 쓴다
-    if (disqus.failed) {
-      commentsFallback('댓글을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.');
-      return;
+  if (window.DISQUS) {
+    // 이미 불러온 상태 — 스레드를 이 글로, 지금 테마로 다시 그린다.
+    disqus.post = post;
+    disqus.shortname = shortname;
+    try {
+      window.DISQUS.reset({ reload: true, config: disqusConfig(post) });
+    } catch (e) {
+      /* 재설정이 실패해도 글은 그대로 읽을 수 있게 둔다 */
     }
-    injectDisqus(shortname);
+    const lazy = host.querySelector('.comments-lazy');
+    if (lazy) lazy.hidden = true;
     return;
   }
 
-  // 이미 불러온 상태 — 스레드를 이 글로, 지금 테마로 다시 그린다.
-  try {
-    window.DISQUS.reset({ reload: true, config: disqusConfig(post) });
-  } catch (e) {
-    /* 재설정이 실패해도 글은 그대로 읽을 수 있게 둔다 */
+  disqus.post = post;
+  disqus.shortname = shortname;
+  if (disqus.failed) {
+    commentsFallback('댓글을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.');
+    return;
   }
+  if (disqus.loading) return; // 스크립트가 오는 중 — 그때의 설정을 쓴다
+  if (disqus.requested) requestComments();
+  else armComments(host);
 }
 
 /* 테마를 바꾸면 댓글 카드와 스레드를 새 색으로 다시 그린다. */
@@ -1168,6 +1344,12 @@ function refreshComments() {
       /* 무시 */
     }
   }
+}
+
+/* 글을 떠날 때는 지연 로더 상태를 되감아 다음 글에서 다시 붙일 수 있게 한다. */
+function resetCommentsLoader() {
+  disqus.armed = false;
+  disqus.requested = Boolean(window.DISQUS);
 }
 
 /* 주소의 ?post={slug} 하나만 꺼낸다 (URLSearchParams 없이도 동작하게). */

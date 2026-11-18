@@ -232,6 +232,29 @@ if app is not None:
     js("siteConfig = {}")
     check("설정 전 mountComments 무해", js("(function(){ try { mountComments({ slug: 'a', title: 'b' }); return true; } catch (e) { return false; } })()"))
 
+    # 대표 사진(cover) 카드
+    card_cover = js("cardHtml({slug:'a',title:'t',date:'2026-11-17',tags:[],cover:'./assets/uploads/2026-11/x.jpg'})")
+    check("카드 cover 프레임", 'class="card-cover"' in card_cover, card_cover[:200])
+    check("카드 cover 지연 로딩", 'loading="lazy"' in card_cover, card_cover[:200])
+    check("카드 cover 경로", 'src="./assets/uploads/2026-11/x.jpg"' in card_cover, card_cover[:220])
+    check("카드 cover 대체텍스트 비움", 'alt=""' in card_cover, card_cover[:220])
+    plain_card = js("cardHtml({slug:'b',title:'t',date:'2026-11-17',tags:[]})")
+    check("사진 없는 카드는 프레임 없음", 'card-cover' not in plain_card, plain_card[:160])
+    check("사진 없는 카드는 도형 썸네일", 'card-thumb' in plain_card, plain_card[:160])
+    first_card = js("cardHtml({slug:'c',title:'t',date:'2026-11-17',tags:[],cover:'x.jpg'}, true)")
+    check("첫 카드 cover 즉시 로딩", 'loading="eager"' in first_card, first_card[:220])
+
+    # 샬레 상태 바 · 히어로
+    bar = js("heroBarHtml([{slug:'a'},{slug:'b'}])")
+    check("상태 바 글 수", 'data-stat="posts">2' in bar, bar[:240])
+    check("상태 바 사진 수 자리", 'data-stat="photos"' in bar, bar[:240])
+    check("상태 바 브랜드", "S.C.H.A.L.E" in bar and "JEONSUL.LOG" in bar, bar[:240])
+    check("상태 바 ONLINE", "hero-online" in bar, bar[:240])
+    check("헤일로 마크", 'class="hero-halo"' in bar, bar[:240])
+
+    check("댓글 지연 로더", js("typeof requestComments === 'function' && typeof armComments === 'function'"))
+    check("댓글 재장전 리셋", js("typeof resetCommentsLoader === 'function'"))
+
 # ── 3. 관리자 (admin.js) ─────────────────────────────────────────
 admin = boot(admin_src)
 check("admin.js 로드", admin is not None)
@@ -320,7 +343,18 @@ check("설정 저장 시 두 키 함께", "Object.assign({}, state.config" in ad
 
 versions = set(re.findall(r"\?v=([a-z0-9]+)", html))
 check("캐시 버전 하나로 통일", len(versions) == 1, ",".join(versions))
-check("캐시 버전 갱신", "20261117g" in versions, ",".join(versions))
+check("캐시 버전 갱신", "20261118a" in versions, ",".join(versions))
+
+# ── 5. 대표 사진 · 동시 저장 경합 ──────────────────────────
+check("본문 첫 사진 추출", ajs("window.BlogAdmin._test.firstPhotoInBody('앞\\n\\n![설명](./assets/uploads/2026-11/a.webp)\\n뒤')") == "assets/uploads/2026-11/a.webp", ajs("window.BlogAdmin._test.firstPhotoInBody('![a](./x.jpg)')"))
+check("사진 없으면 빈 값", ajs("window.BlogAdmin._test.firstPhotoInBody('사진 없는 본문')") == "")
+check("cover 편집 UI", "coverPreview" in admin_src and "대표 사진" in admin_src)
+check("cover 자동 지정", "draft.cover = uploaded.path" in admin_src)
+check("목록 쓰기 큐", "withMutation" in admin_src and "mutationChain" in admin_src)
+check("409 재시도 후 최신 머지", "rewriteIndex" in admin_src and "attempt < 3" in admin_src)
+check("삭제는 목록 먼저", admin_src.index("rewriteIndex") < admin_src.index("글 삭제: ${title}"))
+check("로그인 후 원래 화면", "renderLogin(root, '', route)" in admin_src and "render(root, route ||" in admin_src)
+check("cover 스타일", ".card-cover" in css and ".cover-preview" in css)
 
 print()
 if failures:

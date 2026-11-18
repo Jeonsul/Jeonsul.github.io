@@ -27,6 +27,7 @@
     configSha: null,
     flash: null,
     seq: 0,
+    mutating: false,
     flush: null,
   };
 
@@ -484,6 +485,7 @@
 
   function apiErrorText(err) {
     if (!err) return '알 수 없는 오류가 났습니다.';
+    if (err.busy) return '앞의 저장·삭제가 아직 끝나지 않았습니다. 잠시 뒤 다시 눌러 주세요.';
     if (err.network) return 'GitHub에 연결하지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요.';
     if (err.repoMissing) return '저장소를 찾지 못했습니다. 토큰의 Repository access에 Jeonsul.github.io가 들어 있는지 확인해 주세요.';
     if (err.status === 401) return '토큰이 올바르지 않거나 만료됐습니다. 새 토큰을 만들어 다시 로그인해 주세요.';
@@ -548,14 +550,74 @@
     if (!file) return null;
     const list = await loadIndex();
     const entry = list.find((p) => p.slug === slug) || { slug: slug, title: slug, date: todayISO(), tags: [], summary: '' };
+    const body = file.text.replace(/\r\n/g, '\n').replace(/\s+$/, '');
     return {
       slug: entry.slug,
       title: entry.title || '',
       date: entry.date || todayISO(),
       tags: Array.isArray(entry.tags) ? entry.tags.slice() : [],
       summary: entry.summary || '',
-      body: file.text.replace(/\r\n/g, '\n').replace(/\s+$/, ''),
+      cover: typeof entry.cover === 'string' ? entry.cover : '',
+      body: body,
     };
+  }
+
+  /* ── 목록(posts.json) 쓰기 ──────────────────────────────
+     삭제·저장이 겹치면 예전에 읽은 내용이 최신 목록을 덮어써 카드가 남거나
+     409로 실패한다. 그래서 ① 한 번에 하나씩(큐) ② 쓸 때마다 최신 파일을 다시
+     읽어 머지 ③ 충돌하면 다시 읽고 재시도 로 처리한다. */
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  let mutationChain = Promise.resolve();
+
+  function withMutation(task) {
+    if (state.mutating) return Promise.reject(Object.assign(new Error('BUSY'), { busy: true }));
+    state.mutating = true;
+    const run = mutationChain.then(task, task);
+    mutationChain = run.then(
+      () => { state.mutating = false; },
+      () => { state.mutating = false; }
+    );
+    return run;
+  }
+
+  function parseIndexText(text) {
+    try {
+      const list = JSON.parse(text);
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /* mutate(list, text) 는 새 배열을 돌려주거나, 손댈 것이 없으면 null. */
+  async function rewriteIndex(mutate, message) {
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const indexFile = await getFile('posts.json');
+      if (!indexFile) throw new Error('posts.json을 찾지 못했습니다.');
+      const list = parseIndexText(indexFile.text);
+      const next = mutate(list.slice(), indexFile.text);
+      if (!next) return null;
+      sortIndex(next);
+      const text = JSON.stringify(next, null, 2) + '\n';
+      if (text === indexFile.text) return next; // 달라진 게 없으면 커밋하지 않는다
+      try {
+        await putFile('posts.json', text, indexFile.sha, message);
+        return next;
+      } catch (e) {
+        lastError = e;
+        if (e && (e.status === 409 || e.status === 422)) {
+          await sleep(260 * (attempt + 1));
+          continue; // 최신 파일을 다시 읽어 머지한다
+        }
+        throw e;
+      }
+    }
+    const err = new Error('목록이 다른 곳에서 바뀌었습니다. 잠시 뒤 다시 시도해 주세요.');
+    err.status = 409;
+    err.cause = lastError;
+    throw err;
   }
 
   async function loadPostBody(slug) {
@@ -591,7 +653,7 @@
 
   /* ── 로그인 화면 ──────────────────────────────────────── */
 
-  function renderLogin(root, message) {
+  function renderLogin(root, message, route) {
     state.session = null;
     root.innerHTML = `
       ${headHtml('관리', '이 브라우저에서만 쓰는 열쇠로 로그인합니다. 토큰은 블로그 파일에 기록되지 않습니다.')}
@@ -650,7 +712,8 @@
         state.session = result.user;
         state.persist = persist.checked;
         storeToken(token, persist.checked);
-        render(root, { name: 'admin', sub: '', arg: '' });
+        // 서브라우트(#/admin/new, #/admin/edit/...)로 들어왔으면 그 화면으로 바로 돌아간다.
+        await render(root, route || { name: 'admin', sub: '', arg: '' });
       } catch (err) {
         setApiError(msg, err);
       } finally {
@@ -830,7 +893,7 @@
   /* ── 에디터 ───────────────────────────────────────────── */
 
   function blankDraft() {
-    return { isNew: true, originalSlug: null, slug: '', title: '', date: todayISO(), tags: [], excerpt: '', body: '' };
+    return { isNew: true, originalSlug: null, slug: '', title: '', date: todayISO(), tags: [], excerpt: '', cover: '', body: '' };
   }
 
   function draftFromPost(post) {
@@ -842,6 +905,7 @@
       date: post.date,
       tags: post.tags.slice(),
       excerpt: post.summary,
+      cover: post.cover || '',
       body: post.body,
     };
   }
@@ -853,8 +917,15 @@
       a.date === b.date &&
       a.excerpt === b.excerpt &&
       a.body === b.body &&
+      a.cover === b.cover &&
       a.tags.join(',') === b.tags.join(',')
     );
+  }
+
+  /* 본문에서 처음 나오는 사진 주소 — 대표 사진(cover) 기본값으로 쓴다. */
+  function firstPhotoInBody(body) {
+    const m = String(body || '').match(/!\[[^\]]*\]\(\s*\.?\/?([^)\s]+?)(?:\s+"[^"]*")?\s*\)/);
+    return m ? m[1].replace(/^\.\//, '') : '';
   }
 
   function pickDraft(base, isNew, slug) {
@@ -871,6 +942,7 @@
       date: typeof stored.date === 'string' && stored.date ? stored.date : fresh.date,
       tags: Array.isArray(stored.tags) ? stored.tags.filter((t) => typeof t === 'string') : fresh.tags,
       excerpt: typeof stored.excerpt === 'string' ? stored.excerpt : fresh.excerpt,
+      cover: typeof stored.cover === 'string' ? stored.cover : fresh.cover,
       body: typeof stored.body === 'string' ? stored.body : fresh.body,
     };
     if (!isNew && sameContent(candidate, fresh)) return { draft: fresh, restored: 0 };
@@ -930,6 +1002,22 @@
           <span class="field-label">한 줄 요약</span>
           <input id="fExcerpt" type="text" value="${esc(draft.excerpt)}" placeholder="목록에 보일 한두 문장" autocomplete="off">
         </label>
+        <div class="field cover-field">
+          <span class="field-label">대표 사진 <span class="field-hint-inline">목록 카드에 보이는 사진</span></span>
+          <div class="cover-row">
+            <div class="cover-preview" id="coverPreview"${draft.cover ? '' : ' hidden'}>
+              <img id="coverImg" src="${esc(draft.cover || '')}" alt="대표 사진 미리보기" loading="lazy" decoding="async">
+            </div>
+            <div class="cover-text">
+              <p class="cover-path" id="coverPath">${esc(draft.cover || '아직 없음')}</p>
+              <p class="field-hint">본문에 사진을 넣으면 첫 사진이 자동으로 대표 사진이 됩니다.</p>
+              <div class="admin-actions">
+                <button class="btn btn-sm" type="button" id="coverFromBody">본문 첫 사진으로</button>
+                <button class="btn btn-sm" type="button" id="coverClear"${draft.cover ? '' : ' hidden'}>대표 사진 빼기</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="field">
           <div class="editor-toolbar">
             <span class="field-label">본문 (마크다운)</span>
@@ -987,8 +1075,52 @@
       date: fDate.value,
       tags: draft.tags.slice(),
       excerpt: fExcerpt.value.trim(),
+      cover: typeof draft.cover === 'string' ? draft.cover : '',
       body: fBody.value,
     });
+
+    /* ── 대표 사진 ─────────────────────────────────────── */
+
+    const coverPreview = document.getElementById('coverPreview');
+    const coverImg = document.getElementById('coverImg');
+    const coverPath = document.getElementById('coverPath');
+    const coverClear = document.getElementById('coverClear');
+
+    function renderCover() {
+      const cover = typeof draft.cover === 'string' ? draft.cover : '';
+      if (coverPreview) coverPreview.hidden = !cover;
+      if (coverImg && cover) coverImg.src = cover;
+      if (coverPath) coverPath.textContent = cover || '아직 없음';
+      if (coverClear) coverClear.hidden = !cover;
+    }
+
+    const coverFromBody = document.getElementById('coverFromBody');
+    if (coverFromBody) {
+      coverFromBody.addEventListener('click', () => {
+        const picked = firstPhotoInBody(fBody.value);
+        if (!picked) {
+          if (msg) {
+            msg.classList.add('is-error');
+            msg.textContent = '본문에 사진이 아직 없습니다. 사진을 먼저 넣어 주세요.';
+          }
+          return;
+        }
+        if (msg) {
+          msg.classList.remove('is-error');
+          msg.textContent = '';
+        }
+        draft.cover = picked;
+        renderCover();
+        scheduleSave();
+      });
+    }
+    if (coverClear) {
+      coverClear.addEventListener('click', () => {
+        draft.cover = '';
+        renderCover();
+        scheduleSave();
+      });
+    }
 
     let saveTimer = null;
     let slugTouched = Boolean(draft.slug);
@@ -1169,6 +1301,10 @@
           localPhotos.set(uploaded.path, localUrl);
           addThumb(localUrl, files[i].name);
           insertPhotoMarkdown(uploaded.path);
+          if (!draft.cover) {
+            draft.cover = uploaded.path; // 첫 사진은 대표 사진으로
+            renderCover();
+          }
           done++;
         } catch (err) {
           failure = photoErrorText(err, files[i]);
@@ -1276,6 +1412,8 @@
         fSlug.value = reset.slug;
         fDate.value = reset.date;
         fExcerpt.value = reset.excerpt;
+        draft.cover = reset.cover || '';
+        renderCover();
         fBody.value = reset.body;
         draft.tags = reset.tags.slice();
         fTags.querySelectorAll('button[data-tag]').forEach((b) => {
@@ -1346,10 +1484,11 @@
     return list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   }
 
-  async function publish(d) {
+  async function publishDraft(d) {
     const newPath = `posts/${d.slug}.md`;
     const body = d.body.replace(/\r\n/g, '\n').replace(/\s+$/, '') + '\n';
     const slugChanged = !d.isNew && d.originalSlug && d.originalSlug !== d.slug;
+    const cover = (typeof d.cover === 'string' ? d.cover : '').trim() || firstPhotoInBody(d.body);
 
     // 1) 본문 파일
     const existing = await getFile(newPath);
@@ -1365,23 +1504,19 @@
     const commitMessage = d.isNew ? `새 글: ${d.title}` : `글 수정: ${d.title}`;
     await putFile(newPath, body, existing ? existing.sha : null, commitMessage);
 
-    // 2) 목록
-    const indexFile = await getFile('posts.json');
-    if (!indexFile) throw new Error('posts.json을 찾지 못했습니다.');
-    let list = [];
-    try {
-      list = JSON.parse(indexFile.text);
-    } catch (e) {
-      list = [];
-    }
-    if (!Array.isArray(list)) list = [];
-
+    // 2) 목록 — 항상 최신 posts.json을 다시 읽어 머지한다
     const entry = { slug: d.slug, title: d.title, summary: d.excerpt, date: d.date, tags: d.tags.slice() };
-    const at = list.findIndex((p) => p.slug === (d.originalSlug || d.slug));
-    if (at >= 0) list[at] = Object.assign({}, list[at], entry);
-    else list.push(entry);
-    sortIndex(list);
-    await putFile('posts.json', JSON.stringify(list, null, 2) + '\n', indexFile.sha, '글 목록 갱신');
+    if (cover) entry.cover = cover;
+    await rewriteIndex((list) => {
+      const at = list.findIndex((p) => p.slug === (d.originalSlug || d.slug));
+      if (at >= 0) {
+        list[at] = Object.assign({}, list[at], entry);
+        if (!entry.cover) delete list[at].cover;
+      } else {
+        list.push(entry);
+      }
+      return list;
+    }, '글 목록 갱신');
 
     // 3) 주소를 바꿨다면 예전 파일 정리
     if (slugChanged) {
@@ -1396,30 +1531,42 @@
     return { slug: d.slug };
   }
 
+  /* publish는 한 번에 하나만 — 연타·동시 저장을 막는다. */
+  function publish(d) {
+    return withMutation(() => publishDraft(d));
+  }
+
   /* ── 삭제 ─────────────────────────────────────────────── */
 
-  async function removePost(slug, title) {
+  async function removePostDraft(slug, title) {
     const ok = window.confirm(`"${title}" 글을 지울까요?\n글이 완전히 사라지고 되돌릴 수 없습니다.`);
     if (!ok) return false;
 
-    const file = await getFile(`posts/${slug}.md`);
-    if (file) await deleteFile(`posts/${slug}.md`, file.sha, `글 삭제: ${title}`);
+    // 1) 목록에서 먼저 뺀다 — 본문을 먼저 지우고 목록을 놓치면 404 카드가 남는다.
+    await rewriteIndex(
+      (list) => list.filter((p) => p.slug !== slug),
+      `글 목록 갱신: ${title} 삭제`
+    );
 
-    const indexFile = await getFile('posts.json');
-    if (!indexFile) throw new Error('posts.json을 찾지 못했습니다.');
-    let list = [];
-    try {
-      list = JSON.parse(indexFile.text);
-    } catch (e) {
-      list = [];
+    // 2) 본문 파일 정리 — 없으면 넘어간다
+    const file = await getFile(`posts/${slug}.md`);
+    if (file) {
+      try {
+        await deleteFile(`posts/${slug}.md`, file.sha, `글 삭제: ${title}`);
+      } catch (e) {
+        if (e.status !== 409) throw e;
+        const again = await getFile(`posts/${slug}.md`);
+        if (again) await deleteFile(`posts/${slug}.md`, again.sha, `글 삭제: ${title}`);
+      }
     }
-    if (!Array.isArray(list)) list = [];
-    const next = list.filter((p) => p.slug !== slug);
-    await putFile('posts.json', JSON.stringify(sortIndex(next), null, 2) + '\n', indexFile.sha, `글 목록 갱신: ${title} 삭제`);
 
     invalidateSite();
     state.flash = { type: 'ok', text: `"${title}" 글과 목록 항목을 지웠습니다. 사이트 반영까지 30초~1분 걸립니다.` };
     return true;
+  }
+
+  function removePost(slug, title) {
+    return withMutation(() => removePostDraft(slug, title));
   }
 
   /* ── 화면 그리기 ──────────────────────────────────────── */
@@ -1429,7 +1576,7 @@
     const sub = (route && route.sub) || '';
 
     if (!state.token) {
-      renderLogin(root, '');
+      renderLogin(root, '', route);
       return;
     }
 
@@ -1439,13 +1586,13 @@
         const result = await verifyToken(state.token);
         if (!result.canWrite) {
           clearToken();
-          renderLogin(root, '저장된 토큰에 쓰기 권한이 없습니다. 새 토큰으로 로그인해 주세요.');
+          renderLogin(root, '저장된 토큰에 쓰기 권한이 없습니다. 새 토큰으로 로그인해 주세요.', route);
           return;
         }
         state.session = result.user;
       } catch (err) {
         clearToken();
-        renderLogin(root, apiErrorText(err));
+        renderLogin(root, apiErrorText(err), route);
         return;
       }
     }
@@ -1618,6 +1765,7 @@
       uploadPhoto: uploadPhoto,
       photoMarkdown: photoMarkdown,
       insertPhotoBlock: insertPhotoBlock,
+      firstPhotoInBody: firstPhotoInBody,
       uploadFileName: uploadFileName,
       uploadDirStamp: uploadDirStamp,
       safeFileName: safeFileName,
