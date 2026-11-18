@@ -249,9 +249,9 @@ function haloMarkSvg(cls) {
   </svg>`;
 }
 
-/* 히어로 일러스트 — 샬레 아카이브의 헤일로·광선·크리스탈·모모톡 말풍선.
-   가운데 띠(세로 60~250) 안에 내용을 몰아 두어, 모바일에서 납작하게 잘라도
-   그림이 망가지지 않는다. */
+/* 히어로 일러스트 — 샬레 아카이브의 헤일로·크리스탈·모모톡 대화 카드.
+   모바일에서 납작한 띠로 잘려도 그림이 망가지지 않도록, 모든 내용을
+   가운데 띠(세로 84~216) 안에만 둔다. */
 function heroArtSvg() {
   return `<svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="">
     <defs>
@@ -271,42 +271,42 @@ function heroArtSvg() {
         <stop offset="0" stop-color="#9CE2FF" stop-opacity="0.95"></stop>
         <stop offset="1" stop-color="#128AFA" stop-opacity="0.5"></stop>
       </linearGradient>
+      <linearGradient id="ba-pink" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#FB7299"></stop>
+        <stop offset="1" stop-color="#F2547F"></stop>
+      </linearGradient>
     </defs>
 
     <path d="M300 0h140v58z" fill="url(#ba-ray)"></path>
     <path d="M258 0h62v104z" fill="url(#ba-ray)" opacity="0.7"></path>
     <path d="M0 300h132v-54z" fill="url(#ba-ray)" opacity="0.45"></path>
 
-    <ellipse cx="118" cy="116" rx="94" ry="34" transform="rotate(-13 118 116)" fill="none" stroke="#00AEEF" stroke-width="10" opacity="0.09"></ellipse>
-    <ellipse cx="118" cy="116" rx="94" ry="34" transform="rotate(-13 118 116)" fill="none" stroke="#00AEEF" stroke-width="3.2" opacity="0.5"></ellipse>
-    <ellipse cx="118" cy="116" rx="74" ry="26" transform="rotate(-13 118 116)" fill="none" stroke="#6FD0FF" stroke-width="1.8" opacity="0.85"></ellipse>
-    <ellipse cx="118" cy="116" rx="74" ry="26" transform="rotate(-13 118 116)" fill="url(#ba-g1)" opacity="0.1"></ellipse>
+    <ellipse cx="112" cy="120" rx="88" ry="28" transform="rotate(-13 112 120)" fill="none" stroke="#00AEEF" stroke-width="13" opacity="0.08"></ellipse>
+    <ellipse cx="112" cy="120" rx="88" ry="28" transform="rotate(-13 112 120)" fill="none" stroke="#00AEEF" stroke-width="2.8" opacity="0.55"></ellipse>
+    <ellipse cx="112" cy="120" rx="66" ry="19" transform="rotate(-13 112 120)" fill="none" stroke="#6FD0FF" stroke-width="1.8" opacity="0.9"></ellipse>
 
-    <path d="M118 152l31 52h-62z" fill="url(#ba-crystal)" opacity="0.72"></path>
-    <path d="M118 152l-14 24 14 28 14-28z" fill="#ffffff" opacity="0.55"></path>
-    <path d="M87 204h62l-15 18h-32z" fill="url(#ba-g1)" opacity="0.32"></path>
+    <path d="M112 146l26 50H86z" fill="url(#ba-crystal)" opacity="0.75"></path>
+    <path d="M112 146l-12 22 12 28 12-28z" fill="#ffffff" opacity="0.55"></path>
+    <path d="M86 196h52l-13 14H99z" fill="url(#ba-g1)" opacity="0.3"></path>
 
-    <rect x="198" y="76" width="182" height="112" rx="14" fill="url(#ba-glass)"></rect>
-    <rect x="198" y="76" width="182" height="112" rx="14" fill="none" stroke="#128AFA" stroke-opacity="0.22" stroke-width="1.5"></rect>
-    <path d="M198 92a16 16 0 0 1 16-16h150a16 16 0 0 1 16 16v8H198z" fill="url(#ba-g1)" opacity="0.92"></path>
-    <circle cx="211" cy="86" r="2.8" fill="#ffffff" opacity="0.95"></circle>
-    <circle cx="222" cy="86" r="2.8" fill="#FB7299"></circle>
-    <circle cx="233" cy="86" r="2.8" fill="#00C4B4"></circle>
-    <rect x="214" y="112" width="96" height="9" rx="4.5" fill="#128AFA" opacity="0.72"></rect>
-    <rect x="214" y="132" width="140" height="8" rx="4" fill="#5D7087" opacity="0.28"></rect>
-    <rect x="214" y="150" width="76" height="8" rx="4" fill="#128AFA" opacity="0.22"></rect>
-    <rect x="214" y="168" width="46" height="8" rx="4" fill="#FB7299" opacity="0.5"></rect>
+    <rect x="206" y="88" width="190" height="100" rx="12" fill="url(#ba-glass)"></rect>
+    <rect x="206" y="88" width="190" height="100" rx="12" fill="none" stroke="#128AFA" stroke-opacity="0.2" stroke-width="1.4"></rect>
+    <path d="M206 100a12 12 0 0 1 12-12h166a12 12 0 0 1 12 12v8H206z" fill="url(#ba-pink)" opacity="0.95"></path>
+    <circle cx="220" cy="98" r="2.6" fill="#ffffff" opacity="0.95"></circle>
+    <circle cx="231" cy="98" r="2.6" fill="#ffffff" opacity="0.7"></circle>
+    <circle cx="242" cy="98" r="2.6" fill="#ffffff" opacity="0.45"></circle>
+    <rect x="330" y="94" width="54" height="8" rx="4" fill="#ffffff" opacity="0.55"></rect>
 
-    <path d="M252 212h104a12 12 0 0 1 12 12v16a12 12 0 0 1-12 12h-56l-16 13v-13h-32a12 12 0 0 1-12-12v-16a12 12 0 0 1 12-12z" fill="#ffffff" opacity="0.92"></path>
-    <path d="M252 212h104a12 12 0 0 1 12 12v16a12 12 0 0 1-12 12h-56l-16 13v-13h-32a12 12 0 0 1-12-12v-16a12 12 0 0 1 12-12z" fill="none" stroke="#FB7299" stroke-opacity="0.4" stroke-width="1.4"></path>
-    <circle cx="272" cy="234" r="3.8" fill="#FB7299" opacity="0.85"></circle>
-    <circle cx="290" cy="234" r="3.8" fill="#FB7299" opacity="0.5"></circle>
-    <circle cx="308" cy="234" r="3.8" fill="#FB7299" opacity="0.28"></circle>
+    <rect x="220" y="122" width="104" height="15" rx="7.5" fill="#DCEAF8"></rect>
+    <rect x="274" y="144" width="108" height="15" rx="7.5" fill="#FB7299" opacity="0.28"></rect>
+    <rect x="220" y="166" width="74" height="12" rx="6" fill="#128AFA" opacity="0.16"></rect>
+    <path d="M214 188h20l-20 14z" fill="url(#ba-glass)"></path>
+    <path d="M214 188h20l-20 14z" fill="none" stroke="#128AFA" stroke-opacity="0.16" stroke-width="1.2"></path>
 
-    <path d="M372 40l4.6 11.4L388 56l-11.4 4.6L372 72l-4.6-11.4L356 56l11.4-4.6z" fill="#128AFA" opacity="0.5"></path>
-    <path d="M64 236l3 7.4L74.4 246l-7.4 3L64 256l-3-7-7.4-3 7.4-2.6z" fill="#00C4B4" opacity="0.55"></path>
-    <circle cx="404" cy="164" r="4.6" fill="#00AEEF" opacity="0.4"></circle>
-    <circle cx="46" cy="196" r="3.6" fill="#128AFA" opacity="0.32"></circle>
+    <path d="M398 78l4.2 10.4L412.6 93l-10.4 4.2L398 107.6l-4.2-10.4L383.4 93l10.4-4.6z" fill="#128AFA" opacity="0.5"></path>
+    <path d="M58 196l3 7.4 7.4 3-7.4 3-3 7.4-3-7.4-7.4-3 7.4-3z" fill="#00C4B4" opacity="0.55"></path>
+    <circle cx="418" cy="176" r="4" fill="#00AEEF" opacity="0.4"></circle>
+    <circle cx="44" cy="96" r="3.4" fill="#128AFA" opacity="0.3"></circle>
   </svg>`;
 }
 
