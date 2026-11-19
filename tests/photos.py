@@ -347,7 +347,7 @@ check("설정 저장 시 두 키 함께", "Object.assign({}, state.config" in ad
 
 versions = set(re.findall(r"\?v=([a-z0-9]+)", html))
 check("캐시 버전 하나로 통일", len(versions) == 1, ",".join(versions))
-check("캐시 버전 갱신", "20261118f" in versions, ",".join(versions))
+check("캐시 버전 갱신", "20261119a" in versions, ",".join(versions))
 
 # ── 5. 대표 사진 · 동시 저장 경합 ──────────────────────────
 check("본문 첫 사진 추출", ajs("window.BlogAdmin._test.firstPhotoInBody('앞\\n\\n![설명](./assets/uploads/2026-11/a.webp)\\n뒤')") == "assets/uploads/2026-11/a.webp", ajs("window.BlogAdmin._test.firstPhotoInBody('![a](./x.jpg)')"))

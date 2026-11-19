@@ -21,7 +21,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 REQUIRED = ["index.html", "style.css", "app.js", "admin.js", "posts.json",
             "robots.txt", "sitemap.xml", "404.html", "site-config.json",
-            ".nojekyll", "assets/favicon.svg"]
+            ".nojekyll", "assets/favicon.svg", "manifest.webmanifest",
+            "apple-touch-icon.png", "apple-touch-icon-precomposed.png",
+            "apple-touch-icon-180x180.png", "assets/icon-512.png"]
 
 # 공개 사이트에 실려 나가면 안 되는 단어 (sync_notion.py 의 목록과 같은 성격)
 SENSITIVE = [
@@ -179,6 +181,39 @@ check("헤더 마크 viewBox 정렬", html.count(MARK_VB) == 1)
 check("404 마크 viewBox 정렬", html_404.count(MARK_VB) == 1)
 check("헤더 마크 svg 크기", re.search(r"\.brand-mark svg \{[^}]*width: 1\.75rem;[^}]*height: 1\.75rem;", css) is not None)
 check("404 마크 svg 크기", re.search(r"\.mark svg \{[^}]*width:2\.62rem; height:2\.62rem;", html_404) is not None)
+
+# 11. 2026-11-19 iOS 홈화면 아이콘 — 루토 기본 경로·매니페스트
+root_icons = ["apple-touch-icon.png", "apple-touch-icon-precomposed.png", "apple-touch-icon-180x180.png"]
+for rel in root_icons:
+    f = ROOT / rel
+    check(f"루토 아이콘 존재: {rel}", f.is_file() and f.stat().st_size > 2000)
+check("루토 아이콘 3종 동일 파일", len({(ROOT / r).read_bytes() for r in root_icons}) == 1)
+check("icon-512.png 512×512", icon512_check := (assets / "icon-512.png").is_file())
+if icon512_check:
+    head = (assets / "icon-512.png").read_bytes()[:24]
+    check("icon-512.png PNG IHDR 512", head[:8] == b"\x89PNG\r\n\x1a\n" and int.from_bytes(head[16:20], "big") == 512
+          and int.from_bytes(head[20:24], "big") == 512, str(head[:24]))
+for rel, label in (("index.html", "index"), ("404.html", "404")):
+    page = (ROOT / rel).read_text(encoding="utf-8")
+    check(f"{label} 루토 아이콘 링크", 'href="/apple-touch-icon.png?v=20261119a"' in page)
+    check(f"{label} precomposed 링크", 'href="/apple-touch-icon-precomposed.png?v=20261119a"' in page)
+    check(f"{label} 매니페스트 링크", 'rel="manifest" href="/manifest.webmanifest?v=20261119a"' in page)
+    check(f"{label} 웹앱 메타", 'name="apple-mobile-web-app-capable" content="yes"' in page
+          and 'name="apple-mobile-web-app-title" content="전국 · 기록"' in page)
+    check(f"{label} 에셋 버전 통일", set(re.findall(r"\?v=([a-z0-9]+)", page)) == {"20261119a"},
+          ",".join(sorted(set(re.findall(r"\?v=([a-z0-9]+)", page)))))
+check("index apple-touch-icon sizes", 'sizes="180x180" href="/apple-touch-icon.png' in html)
+
+manifest = json.loads((ROOT / "manifest.webmanifest").read_text(encoding="utf-8"))
+check("매니페스트 name", manifest.get("name") == "전국 · 기록", str(manifest.get("name")))
+check("매니페스트 short_name", manifest.get("short_name") == "전국", str(manifest.get("short_name")))
+check("매니페스트 start_url", manifest.get("start_url") == "/", str(manifest.get("start_url")))
+check("매니페스트 display", manifest.get("display") == "standalone", str(manifest.get("display")))
+check("매니페스트 배경/테마색", manifest.get("background_color") == "#EDF5FC" and manifest.get("theme_color") == "#128AFA")
+icon_sizes = {(i.get("sizes"), i.get("type")) for i in manifest.get("icons", [])}
+check("매니페스트 아이콘 192/512", icon_sizes >= {("192x192", "image/png"), ("512x512", "image/png")}, str(icon_sizes))
+for i in manifest.get("icons", []):
+    check(f"매니페스트 아이콘 실재: {i.get('src')}", (ROOT / str(i.get("src")).lstrip("/")).is_file())
 
 print()
 if failures:
